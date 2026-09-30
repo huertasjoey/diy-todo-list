@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 const CreatePage = () => {
@@ -7,16 +8,32 @@ const CreatePage = () => {
     content: "",
   });
 
-  const handleSubmit = async () => {
-    await fetch("http://localhost:5003/api/task", {
-      method: "POST",
-      headers:{
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData)})
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (!formData.title || !formData.content) {
+        toast.error("All fields are required!");
+        return;
+      }
+
+      await fetch("http://localhost:5003/api/task", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      navigate("/");
+      toast.success("task Created");
+    } catch (error) {
+      console.log(error);
+      toast.error("error");
+    }
   };
 
-  const navigate = useNavigate();
   return (
     <main className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -62,7 +79,9 @@ const CreatePage = () => {
 
               <input
                 value={formData.title}
-                onChange={(e) => setFormData({ ...setFormData,title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 id="title"
                 type="text"
                 placeholder="Enter your task title"
@@ -80,8 +99,10 @@ const CreatePage = () => {
               </label>
 
               <textarea
-              value={formData.content}
-              onChange={(e)=> setFormData({...setFormData,content:e.target.value})}
+                value={formData.content}
+                onChange={(e) =>
+                  setFormData({ ...formData, content: e.target.value })
+                }
                 id="content"
                 rows="6"
                 placeholder="Describe what needs to be done..."

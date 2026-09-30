@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { useNavigate, useParams } from "react-router-dom";
 
 const HomePage = () => {
   const [tasks, setTasks] = useState([]);
@@ -7,14 +8,31 @@ const HomePage = () => {
 
   useEffect(() => {
     const getData = async () => {
-      const response = await fetch("http://localhost:5001/api/task");
+      const response = await fetch("http://localhost:5003/api/task");
       const data = await response.json();
 
-      setTasks(data.tasks);
+      setTasks(data.task);
     };
 
     getData();
-  }, []);
+  }, [tasks]);
+
+  const handleDelete = async (id) => {
+    try {
+  
+      await fetch(`http://localhost:5003/api/task/${id}`,
+        {
+          method: "Delete",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      )   
+    toast.success("Task Sucessfully Deleted");
+    } catch (error) {
+      
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -128,8 +146,12 @@ const HomePage = () => {
                       Task
                     </span>
 
-                    <button className="rounded-lg px-2 py-1 text-xl leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
-                      ⋮
+                    <button 
+                    onClick={()=>{
+                      handleDelete(task._id);
+                    }}
+                    className="rounded-lg px-2 py-3 text-m leading-none cursor-pointer bg-red-500 text-white transition hover:bg-zinc-100 hover:text-slate-700">
+                      Delete
                     </button>
                   </div>
 
