@@ -114,9 +114,9 @@ app.get("/api/task/:id", async(req, res) => {
 });
 
 if(process.env.MODE_ENV === "production")
-    app.use(express.static(path.join(__dirname, "../frontend/disc")));
+    app.use(express.static(path.join(__dirname, "../frontend/dist")));
     app.get(/.*/, (req, res) => {
-        res.sendFile(path.resolve(__dirname, "../frontend/disc/index.html"))
+        res.sendFile(path.resolve(__dirname, "../frontend/dist/index.html"))
     });
 
 app.listen(PORT, () => {
