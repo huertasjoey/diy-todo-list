@@ -11,7 +11,7 @@ const HomePage = () => {
 
   useEffect(() => {
     const getData = async () => {
-      const response = await fetch(`${BASE_URL}/task/`);
+      const response = await fetch(`${BASE_URL}/task`);
       const data = await response.json();
 
       setTasks(data.task);

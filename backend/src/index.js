@@ -118,7 +118,7 @@ if(process.env.MODE_ENV === "production"){
     app.get(/.*/, (req, res) => {
         res.sendFile(path.resolve(__dirname, "../frontend/dist/index.html"))
     });
-}
+};
 app.listen(PORT, () => {
     console.log("Server is running on PORT:", PORT);
     connectDB();
