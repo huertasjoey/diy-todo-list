@@ -2,10 +2,12 @@ import express from "express";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import Task from "./model/task.model.js";
-import cors from "cors"
+import cors from "cors";
+import path from "path";
 
 
 dotenv.config();
+const __dirname = path.resolve();
 const PORT = process.env.PORT;
 const app = express();
 
