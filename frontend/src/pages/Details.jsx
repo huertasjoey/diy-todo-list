@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
+const BASE_URL =
+  import.meta.env.MODE === "development" ? "http://localhost:5003/api" : "/api";
+
 const Details = () => {
   const [task, setTask] = useState(null);
   const { id } = useParams();
@@ -10,7 +13,7 @@ const Details = () => {
   useEffect(() => {
     const getDataById = async () => {
       try {
-        const response = await fetch(`http://localhost:5003/api/task/${id}`);
+        const response = await fetch(`${BASE_URL}/task/${id}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch task");
@@ -29,7 +32,7 @@ const Details = () => {
 
   const handleUpdate = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/task/${id}`, {
+      const response = await fetch(`${BASE_URL}/task/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

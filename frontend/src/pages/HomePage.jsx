@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
+const BASE_URL =
+  import.meta.env.MODE === "development" ? "http://localhost:5003/api" : "/api";
+
 const HomePage = () => {
   const [tasks, setTasks] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const getData = async () => {
-      const response = await fetch("http://localhost:5003/api/task");
+      const response = await fetch(`${BASE_URL}/task/`);
       const data = await response.json();
 
       setTasks(data.task);
@@ -20,7 +23,7 @@ const HomePage = () => {
   const handleDelete = async (id) => {
     try {
   
-      await fetch(`http://localhost:5003/api/task/${id}`,
+      await fetch(`${BASE_URL}/task/${id}`,
         {
           method: "Delete",
           headers: {

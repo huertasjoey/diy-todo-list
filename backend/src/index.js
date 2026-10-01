@@ -2,13 +2,15 @@ import express from "express";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import Task from "./model/task.model.js";
-import cors from "cors";
+import cors from "cors"
+
 
 dotenv.config();
-const port = process.env.PORT;
+const PORT = process.env.PORT;
 const app = express();
 
 app.use(express.json());
+
 
 app.use(
     cors({
@@ -109,9 +111,14 @@ app.get("/api/task/:id", async(req, res) => {
     }
 });
 
+if(process.env.MODE_ENV === "production")
+    app.use(express.static(path.join(__dirname, "../frontend/disc")));
+    app.get(/.*/, (req, res) => {
+        res.sendFile(path.resolve(__dirname, "../frontend/disc/index.html"))
+    });
 
-app.listen(5003, () => {
-    console.log("Server is running on PORT 5003")
+app.listen(PORT, () => {
+    console.log("Server is running on PORT:", PORT);
     connectDB();
-})
+});
 

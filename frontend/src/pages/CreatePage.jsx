@@ -2,6 +2,9 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
+const BASE_URL =
+  import.meta.env.MODE === "development" ? "http://localhost:5003/api" : "/api";
+
 const CreatePage = () => {
   const [formData, setFormData] = useState({
     title: "",
@@ -18,7 +21,7 @@ const CreatePage = () => {
         return;
       }
 
-      await fetch("http://localhost:5003/api/task", {
+      await fetch(`${BASE_URL}/task`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
