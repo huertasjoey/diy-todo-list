@@ -1,126 +1,29 @@
+// All data and accounts live in Supabase, and the browser talks to it directly.
+// This server only hosts the built frontend (for single-service deploys like `npm start`).
+import "dotenv/config";
 import express from "express";
-import dotenv from "dotenv";
-import { connectDB } from "./config/db.js";
-import Task from "./model/task.model.js";
-import cors from "cors";
+import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dist = path.resolve(__dirname, "../../frontend/dist");
+const PORT = process.env.PORT || 5003;
 
-dotenv.config();
-const __dirname = path.resolve();
-const PORT = process.env.PORT;
+if (!fs.existsSync(path.join(dist, "index.html"))) {
+  console.error("frontend/dist not found. Build the frontend first: npm run build");
+  process.exit(1);
+}
+
 const app = express();
+app.disable("x-powered-by");
 
-app.use(express.json());
-
-
-app.use(
-    cors({
-        origin: "http://localhost:5173",
-        credentials: true
-    })
-        
-    );
-//create 
-app.post("/api/task", async(req, res) => {
-   try {
-    const {title, content } = req.body;
-
-    if (!title || !content)
-        return res.status(400).json({sucess: false, error: "title and content must be provided."})
-
-    const task = new Task({title, content})
-
-    await task.save();
-
-    res.status(201).json({sucess: true, task});
-
-   } catch (error) 
-   {console.log("error in creating task", error);
-    res.status(500).json({sucess: false, error: error})    
-   }
-   
+app.use(express.static(dist));
+// single-page app: any other path gets index.html so /login, /register etc. work on refresh
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(dist, "index.html"));
 });
 
-app.get("/api/task", async (req, res) => {
-    try {
-        const task = await Task.find().sort({createdAt: -1})
-        res.status(200).json({sucess:true, task})   
-     } catch (error) {
-        console.log("error in fetching task", error);
-    res.status(500).json({sucess: false, error: error})
-        
-    }
-
-});
-
-app.delete("/api/task/:id", async(req, res) => {
-    try {
-    const{id} = req.params;
-    await Task.findByIdAndDelete(id)
-    res.status(200).json({message: "Task has been Deleted"})
-        
-    } catch (error) {
-        console.log("error in fetching task", error);
-    res.status(500).json({sucess: false, error: error})
-    }
-} )
-
-//update
-app.put("/api/task/:id", async (req, res)=>{
-    try {
-        const {id} = req.params;
-        const {title, content} = req.body;
-
-        if(!title || !content)
-            return req.status(400).json({
-        error: "All fields are required.",
-    });
-
-    const task = await Task.findById(id);
-
-    if(!task)
-        return res.status(404).json({
-    error: "task not found",
-});
-
-const updatedTask = await Task.findByIdAndUpdate(id, {title, content}) 
-
-    res.status(200).json({
-        sucess: true,
-        updatedTask,
-    });
-        
-    } catch (error) {
-        console.log("Error in updating a task.", error);
-        res.status(500).json({
-            sucess: false, error: error  });
-    }
-
-});
-
-app.get("/api/task/:id", async(req, res) => {
-    try {
-       const {id} =req.params;
-       const task = await Task.findById(id);
-       
-       if(!task) return res.status(404).json({error: "task not found"});
-
-       res.status(200).json(task);
-    } catch (error) {
-        console.log("error in getting task", error);
-        res.status(500).json({sucess: false, error: error});
-    }
-});
-
-if(process.env.NODE_ENV === "production"){
-    app.use(express.static(path.join(__dirname, "../frontend/dist")));
-    app.get(/.*/, (req, res) => {
-        res.sendFile(path.resolve(__dirname, "../frontend/dist/index.html"))
-    });
-};
 app.listen(PORT, () => {
-    console.log("Server is running on PORT:", PORT);
-    connectDB();
+  console.log("Serving the planner on PORT:", PORT);
 });
-
