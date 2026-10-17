@@ -3,7 +3,7 @@ import { CheckIcon } from "./Icons";
 // A circle you tick. The real checkbox is visually hidden but stays keyboard and
 // screen-reader accessible; the label gives it a 44px tap area.
 const DayBox = ({ checked, onChange, label, disabled }) => (
-  <label className="flex h-14 w-full cursor-pointer items-center justify-center has-[:disabled]:cursor-default">
+  <label className="relative flex h-14 w-full cursor-pointer items-center justify-center has-[:disabled]:cursor-default">
     <input
       type="checkbox"
       className="peer sr-only"

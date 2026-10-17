@@ -16,6 +16,10 @@
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
+  --color-goal: var(--goal);
+  --color-goal-soft: var(--goal-soft);
+  --color-diary: var(--diary);
+  --color-diary-soft: var(--diary-soft);
 }
 
 /* Light: warm ivory, sage accent */
@@ -32,6 +36,10 @@
   --accent-ink: #ffffff;
   --accent-soft: #e5ecdb;
   --danger: #b3261e;
+  --goal: #4b5fa6;
+  --goal-soft: #e8ebf7;
+  --diary: #a3445f;
+  --diary-soft: #f7e8ec;
 }
 
 /* Dark: soft charcoal, light sage accent */
@@ -47,6 +55,10 @@
   --accent-ink: #11160f;
   --accent-soft: #263224;
   --danger: #f2a39d;
+  --goal: #a5b4ee;
+  --goal-soft: #252b4a;
+  --diary: #e8a3b8;
+  --diary-soft: #3a2230;
 }
 
 /* Night: true black for dark rooms and OLED screens, warm dim amber instead of blue-ish light */
@@ -62,6 +74,10 @@
   --accent-ink: #0b0905;
   --accent-soft: #2a2213;
   --danger: #e59a8f;
+  --goal: #b4a4e0;
+  --goal-soft: #1e1a30;
+  --diary: #dba2b2;
+  --diary-soft: #2a1a20;
 }
 
 html {

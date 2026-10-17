@@ -11,7 +11,7 @@ const toolBtn =
   "flex min-h-14 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 text-center text-xs font-medium lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-left lg:text-sm text-ink transition-colors hover:bg-surface-2 disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent";
 
 /** Live date and time, a month calendar, the week's progress and the tools. */
-const Sidebar = ({ now, monday, stats, ready, onPick, onPrint, onCsv, onReset }) => {
+const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint, onCsv, onReset }) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const todayKey = toKey(now);
 
@@ -43,7 +43,7 @@ const Sidebar = ({ now, monday, stats, ready, onPick, onPrint, onCsv, onReset })
 
       {/* Month calendar (always shown on large screens, behind a toggle on small ones) */}
       <div className={`${showCalendar ? "block" : "hidden"} mt-6 lg:mt-8 lg:block`}>
-        <MiniCalendar key={toKey(monday)} monday={monday} todayKey={todayKey} onPick={onPick} />
+        <MiniCalendar key={toKey(monday)} monday={monday} todayKey={todayKey} onPick={onPick} goals={goals} diaryDays={diaryDays} />
       </div>
 
       {/* This week */}

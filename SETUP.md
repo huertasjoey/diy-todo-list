@@ -8,10 +8,14 @@ and `backend/` is only a tiny server that hosts the built site.
 ## 1. Create the Supabase project
 
 1. Create a project at https://supabase.com/dashboard.
-2. **Run the migration.** Open *SQL Editor*, paste the whole file
-   `supabase/migrations/20261014000000_planner_schema.sql` and run it once.
+2. **Run the migrations, in order.** Open *SQL Editor*, then for each file below paste its whole
+   contents into a new query and run it once:
+   1. `supabase/migrations/20261014000000_planner_schema.sql` (habits, weekly notes)
+   2. `supabase/migrations/20261016000000_goals.sql` (goals; needs the first one already applied)
+   3. `supabase/migrations/20261017000000_diary.sql` (daily diary; needs the first one already applied)
+
    (With the CLI instead: `supabase link --project-ref <ref>` then `supabase db push`.)
-3. **Check it worked.** *Table Editor* shows `weeks` and `week_tasks`, both marked
+3. **Check it worked.** *Table Editor* shows `weeks`, `week_tasks`, `goals` and `diary_entries`, all marked
    "RLS enabled", with 4 policies each (*Authentication → Policies*).
 
 ## 2. Auth settings (Authentication)
@@ -66,7 +70,42 @@ because Vite bakes them in at build time. Any static host (Netlify, Vercel, Clou
 also works with just `frontend/`: build command `npm run build`, output folder `dist`,
 and a rewrite of all paths to `/index.html`.
 
-## 6. Test checklist
+## 6. Writing assistant (optional)
+
+The diary works fully without this. The **Improve my writing** panel (correct, make more natural,
+explain mistakes, vocabulary) needs an AI service, and an AI key must never be put in the website's
+code. So it runs as a Supabase **Edge Function** that holds the key as a secret. Until you set it up,
+the panel's buttons answer "The writing assistant hasn't been set up on your Supabase project yet".
+Nothing is sent anywhere until a signed-in person ticks the agreement box and presses a tool button.
+
+You need an Anthropic API key (https://console.anthropic.com). **Set a monthly spend limit there**: the
+function accepts only signed-in users and 6,000 characters per request, but it has no per-user quota.
+
+**With the Supabase dashboard (no command line):**
+1. *Edge Functions* -> *Deploy a new function* -> *Via editor*. Name it exactly `writing-assist`.
+2. Replace the starter code with the contents of `supabase/functions/writing-assist/index.ts`, and add a
+   second file named `logic.ts` with the contents of `supabase/functions/writing-assist/logic.ts`. Deploy.
+3. *Edge Functions* -> *Secrets* -> add `ANTHROPIC_API_KEY` = your key.
+   Optional: `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`).
+4. Leave "Verify JWT" switched on (the function also checks the caller is a real signed-in user).
+
+**Or with the Supabase CLI:**
+```
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase functions deploy writing-assist
+```
+
+No new variables are needed in `frontend/.env`: the website reaches the function through the same
+public URL and key it already uses. Check it worked: open a diary entry, tick the agreement box,
+write a few lines, press **Correct my writing**.
+
+## 7. Test checklist
+
+0. Diary: **Diary** in the top bar -> *Write today's diary*. Write, *Save draft*, then *Save entry*.
+   Refresh: it is still there. Open the Planner: today shows a diary dot in the month calendar and a
+   chip in the week's **Diary** row. Try typing, then clicking another page: you are asked first.
 
 1. Visit `/` signed out: you land on `/login`.
 2. Register user A, add habits, tick days, write notes. Refresh: everything is still there.
@@ -82,6 +121,13 @@ and a rewrite of all paths to `/index.html`.
    (To try this in the console, temporarily add `window.supabase = supabase` in `src/lib/supabase.js`.)
 
 ## Notes
+
+- The diary keeps one entry per date. Writing on a date that already has one edits it. If another
+  device saved that date first (or changed the entry meanwhile), you are asked whether to keep your
+  version or load theirs; nothing is overwritten silently.
+- Diary text is private to your account (Row Level Security). It leaves the database only to show you
+  your own entries, and goes to the AI only when you press a writing tool.
+- Writing progress counts words and days written. It does not grade your English.
 
 - Saves are per changed row (one habit, one checkbox, the notes), so two devices editing
   different habits don't overwrite each other. Two devices editing the *same* field is last

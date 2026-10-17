@@ -28,10 +28,10 @@ const Sheet = ({ title, subtitle, children, footer }) => (
       className="relative hidden overflow-hidden border-r border-line bg-surface-2 p-14 lg:flex lg:flex-col lg:justify-between"
     >
       <p className="flex items-center gap-3 font-display text-2xl">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-ink">
+        <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-accent text-accent-ink">
           <CheckIcon width={16} height={16} strokeWidth={3} />
         </span>
-        Habit Tracker
+        Kaizen
       </p>
       <div>
         <p className="font-display text-7xl leading-[1.02] tracking-tight">
@@ -393,18 +393,25 @@ export const ResetPassword = () => {
   );
 };
 
-export const SetupNeeded = () => (
-  <Sheet title="Almost there" subtitle="This planner needs a Supabase project.">
+export const SetupNeeded = ({ problem }) => (
+  <Sheet
+    title={problem?.missing ? "Almost there" : "Check the settings"}
+    subtitle={
+      problem?.missing
+        ? "This planner needs a Supabase project."
+        : "The Supabase settings in this build aren’t usable."
+    }
+  >
     <div className="space-y-3 text-sm leading-6">
+      {problem && !problem.missing && <Alert>{problem.message}</Alert>}
       <p>
-        Copy <code className="bg-surface-2 px-1.5 rounded">frontend/.env.example</code> to{" "}
-        <code className="bg-surface-2 px-1.5 rounded">frontend/.env</code>, fill in your project’s URL and public
-        anon key, then restart the dev server.
+        Set <code className="rounded bg-surface-2 px-1.5">VITE_SUPABASE_URL</code> and{" "}
+        <code className="rounded bg-surface-2 px-1.5">VITE_SUPABASE_ANON_KEY</code>. Locally that
+        is <code className="rounded bg-surface-2 px-1.5">frontend/.env</code>. On a host such as
+        Render, add them as environment variables, then rebuild.
       </p>
       <p>
-        The database tables come from{" "}
-        <code className="bg-surface-2 px-1.5 rounded">supabase/migrations</code>. See{" "}
-        <code className="bg-surface-2 px-1.5 rounded">SETUP.md</code> for the full steps.
+        See <code className="rounded bg-surface-2 px-1.5">SETUP.md</code> for the full steps.
       </p>
     </div>
   </Sheet>

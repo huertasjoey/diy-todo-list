@@ -81,3 +81,68 @@ export const saveWeekJob = async ({ userId, weekStart, weekId, job }) => {
   }
   return id;
 };
+
+// ---------------------------------------------------------------- goals
+
+const GOAL_COLUMNS = "id, title, start_date, end_date, current_value, target_value, unit, completed";
+
+const toGoal = (r) => ({
+  id: r.id,
+  title: r.title,
+  startDate: r.start_date,
+  endDate: r.end_date,
+  current: Number(r.current_value),
+  target: r.target_value === null ? null : Number(r.target_value),
+  unit: r.unit,
+  completed: r.completed,
+});
+
+// 23505 is Postgres "unique violation": the same title and dates already exist for this account
+const goalError = (error) => {
+  const err = new Error(
+    error.code === "23505"
+      ? "You already have a goal with this title and these dates."
+      : error.message,
+  );
+  err.code = error.code;
+  return err;
+};
+
+export const listGoals = async () => {
+  const { data, error } = await supabase
+    .from("goals")
+    .select(GOAL_COLUMNS)
+    .order("start_date")
+    .order("created_at");
+  if (error) throw goalError(error);
+  return data.map(toGoal);
+};
+
+/** Insert or update by id, so saving the same goal twice can never create a duplicate. */
+export const saveGoal = async (userId, goal) => {
+  const { data, error } = await supabase
+    .from("goals")
+    .upsert(
+      {
+        id: goal.id,
+        user_id: userId,
+        title: goal.title,
+        start_date: goal.startDate,
+        end_date: goal.endDate,
+        current_value: goal.current,
+        target_value: goal.target,
+        unit: goal.unit,
+        completed: goal.completed,
+      },
+      { onConflict: "id" },
+    )
+    .select(GOAL_COLUMNS)
+    .single();
+  if (error) throw goalError(error);
+  return toGoal(data);
+};
+
+export const deleteGoal = async (id) => {
+  const { error } = await supabase.from("goals").delete().eq("id", id);
+  if (error) throw goalError(error);
+};

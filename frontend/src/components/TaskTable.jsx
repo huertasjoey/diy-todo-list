@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { DAY_NAMES, DAY_SHORT } from "../lib/dates";
+import { DAY_NAMES, DAY_SHORT, toKey } from "../lib/dates";
+import { STATUS, formatRangeText, goalStatus, percentLabel, progressPercent, progressText } from "../lib/goals";
 import DayBox from "./DayBox";
-import { PlusIcon, TrashIcon, UndoIcon } from "./Icons";
+import { BookIcon, PlusIcon, TrashIcon, UndoIcon } from "./Icons";
 
 const MIN_VISIBLE = 8; // rows shown on screen at minimum; print always shows them all
 const SPARE = 3; // empty rows kept below the last habit
@@ -12,7 +13,24 @@ const focusTask = (id) =>
 const iconBtn =
   "flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-0";
 
-const TaskTable = ({ week, dates, todayIndex, ready, onText, onToggle, onClear, onDelete, onAdd }) => {
+const MAX_LANES = 3; // goal rows shown in the week; the rest are one click away in the Goals list
+
+const TaskTable = ({
+  week,
+  dates,
+  todayIndex,
+  ready,
+  onText,
+  onToggle,
+  onClear,
+  onDelete,
+  onAdd,
+  goalLanes = [],
+  todayKey,
+  onOpenGoal,
+  diaryDays = new Map(),
+  onOpenDiary,
+}) => {
   // empty rows revealed on top of the default, by Enter or "Add habit"
   const [extra, setExtra] = useState(0);
 
@@ -22,6 +40,9 @@ const TaskTable = ({ week, dates, todayIndex, ready, onText, onToggle, onClear, 
   );
   const visible = Math.min(week.length, Math.max(MIN_VISIBLE, lastUsed + 1 + SPARE) + extra);
   const firstBlank = week.findIndex((t) => !t.text.trim() && !t.days.some(Boolean));
+
+  const shownLanes = goalLanes.slice(0, MAX_LANES);
+  const hiddenGoals = goalLanes.slice(MAX_LANES).reduce((n, lane) => n + lane.length, 0);
 
   const handleEnter = (index, id) => {
     const next = week[index + 1];
@@ -42,7 +63,7 @@ const TaskTable = ({ week, dates, todayIndex, ready, onText, onToggle, onClear, 
   return (
     <>
       <div className="habit-card overflow-hidden rounded-2xl border border-line bg-surface">
-        <div className="scroll-x overflow-x-auto">
+        <div className="scroll-x relative overflow-x-auto">
           <table className="planner-table w-full min-w-[640px] border-collapse text-left">
             <caption className="sr-only">
               Weekly habits with one checkbox for each day of the week
@@ -88,6 +109,95 @@ const TaskTable = ({ week, dates, todayIndex, ready, onText, onToggle, onClear, 
                 </th>
               </tr>
             </thead>
+            {goalLanes.length > 0 && (
+              <tbody className="no-print border-t border-line">
+                {shownLanes.map((lane, laneIndex) => (
+                  <tr key={laneIndex}>
+                    <th
+                      scope="row"
+                      className="sticky left-0 z-[1] bg-surface px-5 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-goal"
+                    >
+                      {laneIndex === 0 ? "Goals" : <span className="sr-only">Goals, row {laneIndex + 1}</span>}
+                    </th>
+                    {Array.from({ length: 7 }, (_, day) => {
+                      const seg = lane.find((x) => x.start === day);
+                      if (seg) {
+                        const g = seg.goal;
+                        const st = goalStatus(g, todayKey);
+                        return (
+                          <td key={day} colSpan={seg.end - seg.start + 1} className="px-0.5 py-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onOpenGoal(g)}
+                              title={`${g.title}
+${formatRangeText(g)}
+${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%)`}`}
+                              aria-label={`Goal: ${g.title}, ${formatRangeText(g)}, ${percentLabel(g)}, ${STATUS[st].label}. Open details`}
+                              className={`flex h-8 w-full cursor-pointer items-center gap-2 overflow-hidden border-l-[3px] px-2.5 text-left text-xs font-medium text-ink transition-opacity hover:opacity-80 ${STATUS[st].bar} ${
+                                seg.clippedLeft ? "rounded-l-none" : "rounded-l-md"
+                              } ${seg.clippedRight ? "rounded-r-none" : "rounded-r-md"}`}
+                            >
+                              <span className="truncate">{g.title}</span>
+                              {progressPercent(g) !== null && (
+                                <span className={`ml-auto shrink-0 tabular-nums ${STATUS[st].text}`}>
+                                  {progressPercent(g)}%
+                                </span>
+                              )}
+                            </button>
+                          </td>
+                        );
+                      }
+                      const covered = lane.some((x) => x.start < day && x.end >= day);
+                      return covered ? null : <td key={day} />;
+                    })}
+                    <td colSpan={2} />
+                  </tr>
+                ))}
+                {hiddenGoals > 0 && (
+                  <tr>
+                    <td colSpan={10} className="px-5 pb-2 pt-0.5 text-xs text-muted">
+                      <a href="#goals" className="font-medium text-goal underline underline-offset-2">
+                        +{hiddenGoals} more {hiddenGoals === 1 ? "goal" : "goals"} this week
+                      </a>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            )}
+            {dates.some((d) => diaryDays.has(toKey(d))) && (
+              <tbody className="no-print border-t border-line">
+                <tr>
+                  <th
+                    scope="row"
+                    className="sticky left-0 z-[1] bg-surface px-5 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-diary"
+                  >
+                    Diary
+                  </th>
+                  {dates.map((d, i) => {
+                    const entry = diaryDays.get(toKey(d));
+                    return (
+                      <td key={toKey(d)} className="px-0.5 py-1.5 text-center">
+                        {entry && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenDiary(toKey(d))}
+                            title={`${DAY_NAMES[i]}: diary ${entry.draft ? "draft" : "entry"}, ${entry.words} words`}
+                            aria-label={`Diary ${entry.draft ? "draft" : "entry"} for ${DAY_NAMES[i]} ${d.getDate()}, ${entry.words} words. Open it`}
+                            className={`flex h-8 w-full cursor-pointer items-center justify-center gap-1 overflow-hidden rounded-md border-l-[3px] border-diary bg-diary-soft px-1 text-xs font-medium text-diary transition-opacity hover:opacity-80 ${
+                              entry.draft ? "border-dashed" : ""
+                            }`}
+                          >
+                            <BookIcon width={13} height={13} aria-hidden="true" className="shrink-0" />
+                            <span className="truncate tabular-nums">{entry.draft ? "Draft" : entry.words}</span>
+                          </button>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td colSpan={2} />
+                </tr>
+              </tbody>
+            )}
             <tbody>
               {week.map((task, index) => {
                 const done = task.days.filter(Boolean).length;
