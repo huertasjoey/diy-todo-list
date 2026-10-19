@@ -49,8 +49,9 @@ const DiaryPage = () => {
             editing ? "hidden" : ""
           }`}
         >
-          <p className="font-display text-3xl leading-tight">{todayFmt.format(now)}</p>
-          <Link to={`/diary/${todayKey}`} className={`${cta} mt-4 w-full justify-center`}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-diary">Today</p>
+          <p className="mt-1 font-display text-3xl leading-tight sm:text-4xl">{todayFmt.format(now)}</p>
+          <Link to={`/diary/${todayKey}`} className={`${cta} mt-4 w-full justify-center shadow-sm`}>
             <PenIcon width={16} height={16} aria-hidden="true" /> {ctaLabel}
           </Link>
 
@@ -66,14 +67,14 @@ const DiaryPage = () => {
           </div>
 
           <dl className="mt-8 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-line bg-surface p-4">
+            <div className="paper rounded-2xl border border-line p-4">
               <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Streak</dt>
               <dd className="mt-1 font-display text-3xl leading-none tabular-nums">
                 {diary.stats.streak}
                 <span className="ml-1 font-sans text-xs text-muted">{diary.stats.streak === 1 ? "day" : "days"}</span>
               </dd>
             </div>
-            <div className="rounded-2xl border border-line bg-surface p-4">
+            <div className="paper rounded-2xl border border-line p-4">
               <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Entries</dt>
               <dd className="mt-1 font-display text-3xl leading-none tabular-nums">{diary.stats.entries}</dd>
             </div>
@@ -84,18 +85,23 @@ const DiaryPage = () => {
           {editing ? (
             <DiaryEditor key={date} date={date} todayKey={todayKey} userId={user.id} diary={diary} />
           ) : (
-            <>
+            <div className="rise-in mx-auto max-w-4xl lg:mx-0">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Your private journal</p>
-                  <h2 className="font-display text-5xl leading-tight tracking-tight sm:text-6xl">Diary</h2>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-diary">Your private journal</p>
+                  <h2 className="font-display text-4xl leading-tight tracking-tight sm:text-6xl">Diary</h2>
+                  <span className="mt-2 block h-px w-16 bg-diary/60" aria-hidden="true" />
                 </div>
-                <Link to={`/diary/${todayKey}`} className={cta}>
+                <Link to={`/diary/${todayKey}`} className={`${cta} hidden sm:inline-flex`}>
                   <PenIcon width={16} height={16} aria-hidden="true" /> {ctaLabel}
                 </Link>
               </div>
 
-              <div role="tablist" aria-label="Diary sections" className="mt-10 flex gap-1 border-b border-line">
+              <div
+                role="tablist"
+                aria-label="Diary sections"
+                className="mt-8 inline-flex w-full gap-1 rounded-full border border-line bg-surface-2 p-1 sm:mt-10 sm:w-auto"
+              >
                 {[
                   { id: "entries", label: "Entries" },
                   { id: "progress", label: "Writing progress" },
@@ -108,8 +114,8 @@ const DiaryPage = () => {
                     aria-selected={tab === t.id}
                     aria-controls="diary-panel"
                     onClick={() => setParams(t.id === "entries" ? {} : { tab: t.id }, { replace: true })}
-                    className={`-mb-px min-h-11 cursor-pointer border-b-2 px-4 text-sm font-medium transition-colors ${
-                      tab === t.id ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"
+                    className={`min-h-11 flex-1 cursor-pointer rounded-full px-5 text-sm font-medium transition-colors sm:flex-none ${
+                      tab === t.id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
                     }`}
                   >
                     {t.label}
@@ -129,7 +135,7 @@ const DiaryPage = () => {
                   <WritingProgress stats={diary.stats} status={diary.status} onRetry={diary.reload} />
                 )}
               </div>
-            </>
+            </div>
           )}
         </main>
       </div>

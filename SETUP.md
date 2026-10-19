@@ -13,9 +13,10 @@ and `backend/` is only a tiny server that hosts the built site.
    1. `supabase/migrations/20261014000000_planner_schema.sql` (habits, weekly notes)
    2. `supabase/migrations/20261016000000_goals.sql` (goals; needs the first one already applied)
    3. `supabase/migrations/20261017000000_diary.sql` (daily diary; needs the first one already applied)
+   4. `supabase/migrations/20261020000000_day_tasks.sql` (the Daily plan: today's tasks and tomorrow's optional list)
 
    (With the CLI instead: `supabase link --project-ref <ref>` then `supabase db push`.)
-3. **Check it worked.** *Table Editor* shows `weeks`, `week_tasks`, `goals` and `diary_entries`, all marked
+3. **Check it worked.** *Table Editor* shows `weeks`, `week_tasks`, `goals`, `diary_entries` and `day_tasks`, all marked
    "RLS enabled", with 4 policies each (*Authentication → Policies*).
 
 ## 2. Auth settings (Authentication)
@@ -121,6 +122,10 @@ write a few lines, press **Correct my writing**.
    (To try this in the console, temporarily add `window.supabase = supabase` in `src/lib/supabase.js`.)
 
 ## Notes
+
+- The Planner's **Daily plan** holds small tasks for a specific date. What you add under Tomorrow is
+  optional, and becomes today's list at midnight on its own (tasks belong to dates). A day holds up to 30
+  tasks. It is separate from the weekly habit grid.
 
 - The diary keeps one entry per date. Writing on a date that already has one edits it. If another
   device saved that date first (or changed the entry meanwhile), you are asked whether to keep your

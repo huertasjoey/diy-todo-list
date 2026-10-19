@@ -99,9 +99,9 @@ const DiaryHistory = ({ todayKey, totalEntries, totalKnown, onWrite }) => {
         role="search"
         aria-label="Search your diary"
         onSubmit={(e) => e.preventDefault()}
-        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_1fr_1fr_1fr]"
+        className="paper grid grid-cols-2 gap-3 rounded-2xl border border-line p-4 lg:grid-cols-[minmax(0,2fr)_1fr_1fr_1fr]"
       >
-        <div>
+        <div className="col-span-2 lg:col-span-1">
           <label htmlFor="diary-search" className={lab}>
             Search
           </label>
@@ -127,7 +127,7 @@ const DiaryHistory = ({ todayKey, totalEntries, totalKnown, onWrite }) => {
           </label>
           <input id="diary-to" type="date" value={to} min={from || undefined} max={todayKey} onChange={change(setTo)} className={field} />
         </div>
-        <div>
+        <div className="col-span-2 lg:col-span-1">
           <label htmlFor="diary-mood" className={lab}>
             Mood
           </label>
@@ -233,11 +233,11 @@ const DiaryHistory = ({ todayKey, totalEntries, totalKnown, onWrite }) => {
         {status === "ready" && entries.length > 0 && (
           <>
             <ul className="space-y-3">
-              {entries.map((e) => (
-                <li key={e.id}>
+              {entries.map((e, i) => (
+                <li key={e.id} className="rise-in" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
                   <Link
                     to={`/diary/${e.date}`}
-                    className="block rounded-2xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2 sm:p-5"
+                    className="paper group block rounded-2xl border border-line border-l-[3px] border-l-diary/50 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-l-diary motion-reduce:hover:translate-y-0 sm:p-5"
                   >
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <time dateTime={e.date} className="text-sm font-semibold">
@@ -249,7 +249,7 @@ const DiaryHistory = ({ todayKey, totalEntries, totalKnown, onWrite }) => {
                         {e.wordCount.toLocaleString()} {e.wordCount === 1 ? "word" : "words"}
                       </span>
                     </div>
-                    <p className="mt-1 font-display text-xl leading-snug">{e.title || "Untitled entry"}</p>
+                    <p className="mt-2 break-words font-display text-2xl leading-snug">{e.title || "Untitled entry"}</p>
                     <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">{e.preview || "No journal text yet."}</p>
                   </Link>
                 </li>

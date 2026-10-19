@@ -59,10 +59,10 @@ console.log(
 );
 
 // Signed out, the tables must exist but refuse to answer (RLS + no anon grants).
-for (const table of ["weeks", "week_tasks", "goals", "diary_entries"]) {
+for (const table of ["weeks", "week_tasks", "goals", "diary_entries", "day_tasks"]) {
   const { status, body } = await get(`/rest/v1/${table}?select=id&limit=1`);
   if (body.code === "PGRST205" || status === 404) {
-    fail(`Table "${table}" is missing. Run the matching file from supabase/migrations in the SQL Editor (planner_schema, goals or diary).`);
+    fail(`Table "${table}" is missing. Run the matching file from supabase/migrations in the SQL Editor (planner_schema, goals, diary or day_tasks).`);
   } else if (status === 401 || status === 403 || body.code === "42501") {
     pass(`"${table}" exists and refuses signed-out access`);
   } else if (status === 200 && Array.isArray(body) && body.length === 0) {

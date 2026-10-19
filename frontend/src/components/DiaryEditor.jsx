@@ -23,7 +23,7 @@ const longDate = new Intl.DateTimeFormat(undefined, { weekday: "long", year: "nu
 
 const labelCls = "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted";
 const areaCls =
-  "block w-full resize-y rounded-xl border bg-surface px-4 py-3 text-[15px] leading-7 text-ink outline-none transition-colors placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15";
+  "paper block w-full resize-y rounded-2xl border px-4 py-3 text-[15px] leading-7 text-ink outline-none transition-colors placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15";
 const btn =
   "min-h-11 cursor-pointer rounded-full border border-line px-5 text-sm font-medium transition-colors hover:bg-surface-2 disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
 const primary =
@@ -159,6 +159,7 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
   };
 
   const remove = async () => {
+    setConfirmDelete(false);
     setSaving(true);
     try {
       await deleteEntry(entry.id);
@@ -204,7 +205,7 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
   const totalWords = entryWordCount(values);
 
   return (
-    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start xl:gap-8">
+    <div className="rise-in mx-auto max-w-3xl xl:mx-0 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start xl:gap-8">
       <form
         ref={formRef}
         onSubmit={(e) => {
@@ -275,7 +276,7 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
             autoComplete="off"
             onChange={(e) => set("title", e.target.value)}
             placeholder="A short title for the day"
-            className={`${areaCls} font-display text-2xl leading-snug ${errors.title ? "border-danger" : "border-line"}`}
+            className={`${areaCls} font-display text-2xl leading-snug sm:text-3xl ${errors.title ? "border-danger" : "border-line"}`}
           />
         </div>
 
@@ -303,7 +304,7 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
             aria-invalid={errors.content ? "true" : undefined}
             aria-describedby={errors.content ? "diary-journal-error diary-journal-count" : "diary-journal-count"}
             placeholder="Write about your day. There are no rules. Just start."
-            className={`${areaCls} min-h-[22rem] text-base ${errors.content ? "border-danger" : "border-line"}`}
+            className={`${areaCls} min-h-[18rem] px-5 py-4 text-base leading-8 sm:min-h-[22rem] sm:px-7 sm:py-6 ${errors.content ? "border-danger" : "border-line"}`}
           />
           <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
             <p id="diary-journal-count" className="text-xs text-muted">
@@ -375,7 +376,7 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
         )}
 
         {/* actions */}
-        <div className="sticky bottom-0 z-10 -mx-4 mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line bg-bg/90 px-4 py-3 backdrop-blur sm:-mx-8 sm:px-8 lg:mx-0 lg:rounded-b-none lg:px-0">
+        <div className="sticky bottom-0 z-10 -mx-4 mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line bg-bg/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-8 sm:px-8 lg:mx-0 lg:rounded-b-none lg:px-0">
           <div>
             {entry && (
               <button
@@ -388,7 +389,7 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
               </button>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none">
             <button type="button" onClick={() => save(true)} disabled={saving} className={btn}>
               {saving ? "Saving…" : entry && !entry.isDraft ? "Save as draft" : "Save draft"}
             </button>

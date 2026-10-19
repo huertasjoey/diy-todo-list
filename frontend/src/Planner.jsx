@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./auth/AuthProvider";
 import AppShell from "./components/AppShell";
 import ConfirmDialog from "./components/ConfirmDialog";
+import DayPlan from "./components/DayPlan";
 import GoalModal from "./components/GoalModal";
 import GoalsPanel from "./components/GoalsPanel";
 import { ChevronLeftIcon, ChevronRightIcon } from "./components/Icons";
@@ -10,6 +11,7 @@ import Sidebar from "./components/Sidebar";
 import TaskTable from "./components/TaskTable";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import useDayTasks from "./hooks/useDayTasks";
 import useDiaryStats from "./hooks/useDiaryStats";
 import useGoals from "./hooks/useGoals";
 import useNow from "./hooks/useNow";
@@ -57,6 +59,8 @@ const Planner = () => {
   const todayKey = toKey(now);
   // diary entries are drawn on the calendars too (a marker per day that has one)
   const diary = useDiaryStats(user.id, todayKey);
+  // today's tasks and the optional list for tomorrow (tasks belong to dates, so tomorrow's becomes today's)
+  const plan = useDayTasks(user.id, todayKey);
   const openDiary = (date) => navigate(`/diary/${date}`);
   const thisMonday = toKey(mondayOf(now));
   const dates = useMemo(() => weekDates(monday), [monday]);
@@ -215,6 +219,8 @@ const Planner = () => {
               </button>
             </div>
           </div>
+
+          <DayPlan plan={plan} />
 
           {status === "loadError" ? (
             <div className="rounded-2xl border border-dashed border-line px-6 py-16 text-center" role="alert">
