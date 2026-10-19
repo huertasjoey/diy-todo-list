@@ -17,6 +17,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import { ChevronLeftIcon, PenIcon, TrashIcon } from "./Icons";
 import MoodPicker from "./MoodPicker";
 import WritingAssistant from "./WritingAssistant";
+import WordGoal from "./WordGoal";
 
 const longDate = new Intl.DateTimeFormat(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
@@ -316,6 +317,8 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
             )}
           </div>
         </div>
+
+        <WordGoal words={totalWords} />
 
         {/* reflection (all optional) */}
         <fieldset className="mt-8">

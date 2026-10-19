@@ -20,7 +20,7 @@ const AppShell = ({ onSignOut, children }) => {
           <h1 className="flex items-center gap-3 font-display text-2xl leading-none">
             <span
               aria-hidden="true"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-accent text-accent-ink"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-accent text-accent-ink max-[339px]:hidden"
             >
               <CheckIcon width={16} height={16} strokeWidth={3} />
             </span>
@@ -29,10 +29,12 @@ const AppShell = ({ onSignOut, children }) => {
           </h1>
           <nav aria-label="Main" className="flex items-center gap-1">
             <NavLink to="/" end className={link}>
-              <CalendarIcon width={16} height={16} aria-hidden="true" /> Planner
+              <CalendarIcon width={16} height={16} aria-hidden="true" />
+              <span className="max-[439px]:sr-only">Planner</span>
             </NavLink>
             <NavLink to="/diary" className={link}>
-              <BookIcon width={16} height={16} aria-hidden="true" /> Diary
+              <BookIcon width={16} height={16} aria-hidden="true" />
+              <span className="max-[439px]:sr-only">Diary</span>
             </NavLink>
           </nav>
         </div>
