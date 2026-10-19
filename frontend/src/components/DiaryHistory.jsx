@@ -13,10 +13,11 @@ const field =
 const lab = "mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted";
 
 /** Past entries, newest first, with search, a date range and a mood filter. */
-const DiaryHistory = ({ todayKey, onWrite }) => {
+const DiaryHistory = ({ todayKey, totalEntries, totalKnown, onWrite }) => {
   const [search, setSearch] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  // both boxes start as today's date, so the list opens on today. "Show all entries" clears them.
+  const [from, setFrom] = useState(todayKey);
+  const [to, setTo] = useState(todayKey);
   const [mood, setMood] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -74,6 +75,11 @@ const DiaryHistory = ({ todayKey, onWrite }) => {
   };
 
   const filtering = Boolean(applied.search.trim() || applied.from || applied.to || applied.mood);
+  // exactly the opening view: only the two date boxes, both on today
+  const onToday = !applied.search.trim() && !applied.mood && applied.from === todayKey && applied.to === todayKey;
+  const diaryIsEmpty = Boolean(totalKnown) && totalEntries === 0;
+  // an empty opening view can mean "nothing today" or "a brand-new diary": wait until we know which
+  const waitingForTotals = status === "ready" && entries.length === 0 && onToday && !totalKnown;
   const clear = () => {
     setSearch("");
     setFrom("");
@@ -143,15 +149,15 @@ const DiaryHistory = ({ todayKey, onWrite }) => {
       )}
       {filtering && (
         <p className="mt-3 text-sm text-muted">
-          Showing matching entries.{" "}
+          {onToday ? "Showing today's entry." : "Showing matching entries."}{" "}
           <button type="button" onClick={clear} className="cursor-pointer font-medium text-accent underline underline-offset-2">
-            Clear filters
+            {onToday ? "Show all entries" : "Clear filters"}
           </button>
         </p>
       )}
 
       <div className="mt-5" aria-live="polite" aria-busy={status === "loading"}>
-        {status === "loading" && !rangeBackwards && (
+        {(status === "loading" || waitingForTotals) && !rangeBackwards && (
           <div className="space-y-3" role="status" aria-label="Loading entries">
             {[0, 1, 2].map((i) => (
               <div key={i} className="h-24 animate-pulse rounded-2xl bg-surface-2" />
@@ -176,7 +182,7 @@ const DiaryHistory = ({ todayKey, onWrite }) => {
           </div>
         )}
 
-        {status === "ready" && entries.length === 0 && !rangeBackwards && !filtering && (
+        {status === "ready" && entries.length === 0 && !rangeBackwards && diaryIsEmpty && (
           <div className="rounded-2xl border border-dashed border-line px-6 py-14 text-center">
             <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-diary-soft text-diary">
               <BookIcon width={22} height={22} aria-hidden="true" />
@@ -195,7 +201,26 @@ const DiaryHistory = ({ todayKey, onWrite }) => {
           </div>
         )}
 
-        {status === "ready" && entries.length === 0 && filtering && !rangeBackwards && (
+        {status === "ready" && entries.length === 0 && onToday && !rangeBackwards && totalKnown && !diaryIsEmpty && (
+          <div className="rounded-2xl border border-dashed border-line px-6 py-12 text-center">
+            <p className="font-display text-2xl">Nothing written today yet</p>
+            <p className="mt-1 text-sm text-muted">Your earlier entries are one click away.</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={onWrite}
+                className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90"
+              >
+                <PenIcon width={16} height={16} aria-hidden="true" /> Write today&apos;s diary
+              </button>
+              <button type="button" onClick={clear} className="min-h-11 cursor-pointer rounded-full border border-line px-5 text-sm font-medium transition-colors hover:bg-surface-2">
+                Show all entries
+              </button>
+            </div>
+          </div>
+        )}
+
+        {status === "ready" && entries.length === 0 && filtering && !onToday && !rangeBackwards && !diaryIsEmpty && (
           <div className="rounded-2xl border border-dashed border-line px-6 py-12 text-center">
             <p className="font-display text-2xl">No entries match</p>
             <p className="mt-1 text-sm text-muted">Try different words or a wider date range.</p>

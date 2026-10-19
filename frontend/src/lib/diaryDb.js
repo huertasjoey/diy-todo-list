@@ -132,6 +132,17 @@ export const askWritingAssistant = async ({ action, text, style }) => {
     }
     const status = error.context?.status;
     let message = info?.message;
+    if (error.name === "FunctionsFetchError" && !info) {
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      throw Object.assign(
+        new Error(
+          offline
+            ? "You appear to be offline. Check your connection and try again."
+            : "Couldn't reach the writing assistant. Most often this means it hasn't been set up on your Supabase project yet (see SETUP.md, “Writing assistant”). If it is set up, check your connection and try again.",
+        ),
+        { code: offline ? "offline" : "unreachable" },
+      );
+    }
     if (status === 404)
       message = "The writing assistant hasn't been set up on your Supabase project yet. See SETUP.md, section “Writing assistant”.";
     else if (!message) message = "Couldn't reach the writing assistant. Check your connection and try again.";

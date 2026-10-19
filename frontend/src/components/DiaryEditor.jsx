@@ -1,13 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { Link, useBlocker, useLocation, useNavigate } from "react-router-dom";
+import { Link, useBlocker, useNavigate } from "react-router-dom";
 import {
-  PROMPTS,
   REFLECTIONS,
   blankValues,
   entryWordCount,
   fieldsFromValues,
-  promptIndexForDate,
   sameValues,
   validateEntry,
   valuesFromEntry,
@@ -40,7 +38,6 @@ const Chip = ({ children, tone }) => (
  */
 const DiaryEditor = ({ date, todayKey, userId, diary }) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [loadState, setLoadState] = useState({ status: "loading", error: "" });
   const [retry, setRetry] = useState(0);
@@ -51,7 +48,6 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [promptIndex, setPromptIndex] = useState(() => location.state?.promptIndex ?? promptIndexForDate(date));
   const [selection, setSelection] = useState({ start: 0, end: 0 });
 
   const journalRef = useRef(null);
@@ -176,13 +172,6 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
     }
   };
 
-  const addPromptToJournal = () => {
-    const text = PROMPTS[promptIndex];
-    if (values.content.includes(text)) return journalRef.current?.focus();
-    set("content", values.content.trim() ? `${text}\n\n${values.content}` : `${text}\n\n`);
-    journalRef.current?.focus();
-  };
-
   // ---- loading and error states
   if (loadState.status === "loading")
     return (
@@ -270,20 +259,6 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
             </p>
           )}
         </div>
-
-        {/* the writing prompt */}
-        <aside aria-label="Writing prompt" className="mt-6 rounded-2xl border border-diary/30 bg-diary-soft/60 p-4 sm:p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-diary">Writing prompt</p>
-          <p className="mt-1 font-display text-2xl leading-snug">{PROMPTS[promptIndex]}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={addPromptToJournal} className={btn}>
-              Add to my journal
-            </button>
-            <button type="button" onClick={() => setPromptIndex((i) => (i + 1) % PROMPTS.length)} className={btn}>
-              Another prompt
-            </button>
-          </div>
-        </aside>
 
         {/* title */}
         <div className="mt-6">

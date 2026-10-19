@@ -74,5 +74,20 @@ for (const table of ["weeks", "week_tasks", "goals", "diary_entries"]) {
   }
 }
 
+// The writing assistant is optional, so this never fails the check. It only says where it stands.
+{
+  let assist;
+  try {
+    const r = await fetch(`${url}/functions/v1/writing-assist`, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: "{}" });
+    assist = { status: r.status, body: await r.json().catch(() => ({})) };
+  } catch {
+    assist = { status: 0, body: {} };
+  }
+  if (assist.status === 404) console.log("ℹ writing assistant: not deployed yet (optional). See SETUP.md, “Writing assistant”.");
+  else if (assist.body.error === "not_configured") console.log("ℹ writing assistant: deployed, but no ANTHROPIC_API_KEY secret is set yet.");
+  else if (assist.status === 0) console.log("ℹ writing assistant: couldn't be reached to check.");
+  else console.log("✓ writing assistant: deployed (it answered; signed-in checks happen when you use it)");
+}
+
 console.log(failed ? "\nNot ready yet. Fix the ✗ items above." : "\nReady. Start the app with npm run dev and register an account.");
 process.exit(failed ? 1 : 0);

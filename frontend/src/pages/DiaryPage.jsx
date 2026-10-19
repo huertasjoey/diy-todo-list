@@ -1,4 +1,3 @@
-import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
@@ -11,14 +10,12 @@ import WritingProgress from "../components/WritingProgress";
 import useDiaryStats from "../hooks/useDiaryStats";
 import useNow from "../hooks/useNow";
 import { mondayOf, parseKey, toKey } from "../lib/dates";
-import { PROMPTS, isValidDateKey, promptIndexForDate } from "../lib/diary";
+import { isValidDateKey } from "../lib/diary";
 
 const todayFmt = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" });
 
 const cta =
   "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-accent px-6 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90";
-const ghost =
-  "min-h-11 cursor-pointer rounded-full border border-line px-5 text-sm font-medium transition-colors hover:bg-surface-2";
 
 const DiaryPage = () => {
   const { user } = useAuth();
@@ -28,7 +25,6 @@ const DiaryPage = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const diary = useDiaryStats(user.id, todayKey);
-  const [promptIndex, setPromptIndex] = useState(() => promptIndexForDate(todayKey));
 
   // a mistyped or future date in the address bar goes somewhere sensible instead of failing
   if (date && !isValidDateKey(date)) return <Navigate to="/diary" replace />;
@@ -99,29 +95,6 @@ const DiaryPage = () => {
                 </Link>
               </div>
 
-              {/* the daily writing challenge */}
-              <section aria-labelledby="challenge-heading" className="mt-8 rounded-2xl border border-diary/30 bg-diary-soft/60 p-5 sm:p-6">
-                <h3 id="challenge-heading" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-diary">
-                  Daily writing challenge
-                </h3>
-                <p className="mt-2 font-display text-3xl leading-snug">{PROMPTS[promptIndex]}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/diary/${todayKey}`, { state: { promptIndex } })}
-                    className={cta}
-                  >
-                    Write about this
-                  </button>
-                  <button type="button" onClick={() => setPromptIndex((i) => (i + 1) % PROMPTS.length)} className={ghost}>
-                    Another prompt
-                  </button>
-                </div>
-                <p className="mt-3 text-xs text-muted">
-                  Optional. Your answer is saved as today&apos;s diary entry, like anything else you write.
-                </p>
-              </section>
-
               <div role="tablist" aria-label="Diary sections" className="mt-10 flex gap-1 border-b border-line">
                 {[
                   { id: "entries", label: "Entries" },
@@ -146,7 +119,12 @@ const DiaryPage = () => {
 
               <div id="diary-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="mt-6">
                 {tab === "entries" ? (
-                  <DiaryHistory todayKey={todayKey} onWrite={() => navigate(`/diary/${todayKey}`)} />
+                  <DiaryHistory
+                    todayKey={todayKey}
+                    totalEntries={diary.rows.length}
+                    totalKnown={diary.status === "ready"}
+                    onWrite={() => navigate(`/diary/${todayKey}`)}
+                  />
                 ) : (
                   <WritingProgress stats={diary.stats} status={diary.status} onRetry={diary.reload} />
                 )}
