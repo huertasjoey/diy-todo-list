@@ -34,10 +34,14 @@ const Sheet = ({ title, subtitle, children, footer }) => (
         Kaizen
       </p>
       <div>
-        <p className="font-display text-7xl leading-[1.02] tracking-tight">
-          Small habits,
+        <p className="font-display text-6xl leading-[1.05] tracking-tight">
+          We are what
           <br />
-          <em className="text-accent">every day.</em>
+          <em className="text-accent">we practice,</em>
+          <br />
+          not what we think
+          <br />
+          we are.
         </p>
         <div className="mt-12 space-y-3">
           {WEEK_PREVIEW.map((row, r) => (

@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import AccountMenu from "./AccountMenu";
-import { BookIcon, CalendarIcon, CheckIcon, SparklesIcon } from "./Icons";
+import { BookIcon, CalendarIcon, CheckIcon } from "./Icons";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 const link = ({ isActive }) =>
@@ -15,6 +15,9 @@ const AppShell = ({ onSignOut, children }) => {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
+      <p className="no-print border-b border-line bg-accent-soft px-4 py-2 text-center font-display text-base italic leading-snug text-ink sm:text-lg">
+        “We are what we practice, not what we think we are.”
+      </p>
       <header className="no-print sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-line bg-bg/85 px-3 backdrop-blur sm:px-8">
         <div className="flex min-w-0 items-center gap-2 sm:gap-6">
           <h1 className="flex items-center gap-3 font-display text-2xl leading-none">
@@ -35,10 +38,6 @@ const AppShell = ({ onSignOut, children }) => {
             <NavLink to="/diary" className={link}>
               <BookIcon width={16} height={16} aria-hidden="true" />
               <span className="max-[439px]:sr-only">Diary</span>
-            </NavLink>
-            <NavLink to="/mantra" className={link}>
-              <SparklesIcon width={16} height={16} aria-hidden="true" />
-              <span className="max-[439px]:sr-only">Mantra</span>
             </NavLink>
           </nav>
         </div>
