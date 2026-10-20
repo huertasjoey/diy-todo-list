@@ -16,7 +16,7 @@ const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint,
   const todayKey = toKey(now);
 
   return (
-    <aside className="no-print border-b border-line px-4 py-6 sm:px-8 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-7 lg:py-8">
+    <aside className="no-print border-b border-line px-4 py-6 sm:px-8 lg:sticky lg:top-16 lg:h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-5 lg:py-8 xl:px-7">
       {/* Live clock */}
       <div className="flex items-end justify-between gap-4 lg:block">
         <div>

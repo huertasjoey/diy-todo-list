@@ -2,7 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 
 export const PageSpinner = () => (
-  <div className="flex min-h-screen items-center justify-center" role="status" aria-label="Loading">
+  <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading">
     <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
   </div>
 );

@@ -10,7 +10,7 @@ const focusTask = (id) =>
   requestAnimationFrame(() => document.getElementById(`task-${id}`)?.focus());
 
 const iconBtn =
-  "flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-0";
+  "flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-0";
 
 const MAX_LANES = 3; // goal rows shown in the week; the rest are one click away in the Goals list
 

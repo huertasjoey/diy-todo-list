@@ -132,7 +132,7 @@ const Planner = () => {
 
   return (
     <AppShell onSignOut={handleSignOut}>
-      <div className="app-grid lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <div className="app-grid lg:grid lg:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)]">
         <Sidebar
           now={now}
           monday={monday}
@@ -146,7 +146,7 @@ const Planner = () => {
           onReset={() => setConfirmReset(true)}
         />
 
-        <main className="main-pane min-w-0 px-4 py-6 sm:px-8 lg:px-12 lg:py-10" aria-busy={status === "loading"}>
+        <main className="main-pane min-w-0 px-4 py-6 sm:px-8 lg:px-8 lg:py-10 xl:px-12" aria-busy={status === "loading"}>
           {/* Printed heading (the on-screen one is the top bar and week header) */}
           <div className="print-only mb-3">
             <p className="text-center font-display text-[40px] uppercase leading-none tracking-wide">

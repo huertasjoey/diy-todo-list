@@ -14,10 +14,7 @@ const AppShell = ({ onSignOut, children }) => {
   const { user, displayName, signOut } = useAuth();
 
   return (
-    <div className="min-h-screen bg-bg text-ink">
-      <p className="no-print border-b border-line bg-accent-soft px-4 py-2 text-center font-display text-base italic leading-snug text-ink sm:text-lg">
-        “We are what we practice, not what we think we are.”
-      </p>
+    <div className="min-h-dvh bg-bg text-ink">
       <header className="no-print sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-line bg-bg/85 px-3 backdrop-blur sm:px-8">
         <div className="flex min-w-0 items-center gap-2 sm:gap-6">
           <h1 className="flex items-center gap-3 font-display text-2xl leading-none">
@@ -41,11 +38,18 @@ const AppShell = ({ onSignOut, children }) => {
             </NavLink>
           </nav>
         </div>
+        <p className="hidden min-w-0 flex-1 truncate px-2 text-center font-display text-lg italic text-muted xl:block">
+          “We are what we practice, not what we think we are.”
+        </p>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeSwitcher />
           <AccountMenu user={user} displayName={displayName} onSignOut={onSignOut ?? (() => signOut())} />
         </div>
       </header>
+      {/* too narrow for the navbar: the mantra sits just under it instead */}
+      <p className="no-print border-b border-line bg-accent-soft px-4 py-2 text-center font-display text-base italic leading-snug text-ink xl:hidden">
+        “We are what we practice, not what we think we are.”
+      </p>
       {children}
     </div>
   );

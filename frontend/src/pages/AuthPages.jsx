@@ -22,7 +22,7 @@ const WEEK_PREVIEW = [
 
 // Full-screen: a quiet brand panel beside the form (the panel is hidden on small screens).
 const Sheet = ({ title, subtitle, children, footer }) => (
-  <div className="min-h-screen bg-bg text-ink lg:grid lg:grid-cols-[1.1fr_1fr]">
+  <div className="min-h-dvh bg-bg text-ink lg:grid lg:grid-cols-[1.1fr_1fr]">
     <section
       aria-hidden="true"
       className="relative hidden overflow-hidden border-r border-line bg-surface-2 p-14 lg:flex lg:flex-col lg:justify-between"
@@ -63,7 +63,7 @@ const Sheet = ({ title, subtitle, children, footer }) => (
       <p className="text-sm text-muted">Your habits and notes stay private to your account.</p>
     </section>
 
-    <main className="flex min-h-screen flex-col px-5 py-5 sm:px-10">
+    <main className="flex min-h-dvh flex-col px-5 py-5 sm:px-10">
       <div className="flex justify-end">
         <ThemeSwitcher />
       </div>

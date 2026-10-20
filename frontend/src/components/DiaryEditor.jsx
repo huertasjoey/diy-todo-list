@@ -400,7 +400,7 @@ const DiaryEditor = ({ date, todayKey, userId, diary }) => {
         </div>
       </form>
 
-      <div className="mt-10 xl:sticky xl:top-20 xl:mt-0 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto">
+      <div className="mt-10 xl:sticky xl:top-20 xl:mt-0 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto">
         <WritingAssistant
           content={values.content}
           selection={selection}

@@ -43,9 +43,9 @@ const DiaryPage = () => {
 
   return (
     <AppShell>
-      <div className="app-grid lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <div className="app-grid lg:grid lg:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)]">
         <aside
-          className={`no-print border-b border-line px-4 py-6 sm:px-8 lg:sticky lg:top-16 lg:block lg:h-[calc(100vh-4rem)] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-7 lg:py-8 ${
+          className={`no-print border-b border-line px-4 py-6 sm:px-8 lg:sticky lg:top-16 lg:block lg:h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-5 lg:py-8 xl:px-7 ${
             editing ? "hidden" : ""
           }`}
         >
@@ -81,7 +81,7 @@ const DiaryPage = () => {
           </dl>
         </aside>
 
-        <main className="main-pane min-w-0 px-4 py-6 sm:px-8 lg:px-12 lg:py-10">
+        <main className="main-pane min-w-0 px-4 py-6 sm:px-8 lg:px-8 lg:py-10 xl:px-12">
           {editing ? (
             <DiaryEditor key={date} date={date} todayKey={todayKey} userId={user.id} diary={diary} />
           ) : (

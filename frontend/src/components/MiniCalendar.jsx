@@ -48,7 +48,7 @@ const MiniCalendar = ({ monday, todayKey, onPick, goals = [], diaryDays = new Ma
             key={d}
             aria-hidden="true"
             title={DAY_NAMES[i]}
-            className="pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted"
+            className="pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted"
           >
             {d[0]}
           </span>
