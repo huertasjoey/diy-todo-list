@@ -4,8 +4,7 @@ import { STATUS, formatRangeText, goalStatus, percentLabel, progressPercent, pro
 import DayBox from "./DayBox";
 import { BookIcon, PlusIcon, TrashIcon, UndoIcon } from "./Icons";
 
-const MIN_VISIBLE = 8; // rows shown on screen at minimum; print always shows them all
-const SPARE = 3; // empty rows kept below the last habit
+const MIN_VISIBLE = 7; // rows shown on screen at minimum; print always shows them all
 
 const focusTask = (id) =>
   requestAnimationFrame(() => document.getElementById(`task-${id}`)?.focus());
@@ -38,7 +37,7 @@ const TaskTable = ({
     (last, t, i) => (t.text.trim() || t.days.some(Boolean) ? i : last),
     -1,
   );
-  const visible = Math.min(week.length, Math.max(MIN_VISIBLE, lastUsed + 1 + SPARE) + extra);
+  const visible = Math.min(week.length, Math.max(MIN_VISIBLE, lastUsed + 1) + extra);
   const firstBlank = week.findIndex((t) => !t.text.trim() && !t.days.some(Boolean));
 
   const shownLanes = goalLanes.slice(0, MAX_LANES);
