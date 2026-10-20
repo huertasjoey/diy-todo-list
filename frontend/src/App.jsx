@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-rou
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import { PublicOnly, RequireAuth } from "./auth/Guards";
 import DiaryPage from "./pages/DiaryPage";
+import MantraPage from "./pages/MantraPage";
 import Planner from "./Planner";
 import { ForgotPassword, Login, Register, ResetPassword, SetupNeeded } from "./pages/AuthPages";
 import { configProblem, isConfigured } from "./lib/supabase";
@@ -15,6 +16,11 @@ const PlannerForUser = () => {
 const DiaryForUser = () => {
   const { user } = useAuth();
   return <DiaryPage key={user.id} />;
+};
+
+const MantraForUser = () => {
+  const { user } = useAuth();
+  return <MantraPage key={user.id} />;
 };
 
 const Root = () => (
@@ -37,6 +43,7 @@ const router = createBrowserRouter([
       { path: "/", element: <RequireAuth><PlannerForUser /></RequireAuth> },
       { path: "/diary", element: <RequireAuth><DiaryForUser /></RequireAuth> },
       { path: "/diary/:date", element: <RequireAuth><DiaryForUser /></RequireAuth> },
+      { path: "/mantra", element: <RequireAuth><MantraForUser /></RequireAuth> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import AccountMenu from "./AccountMenu";
-import { BookIcon, CalendarIcon, CheckIcon } from "./Icons";
+import { BookIcon, CalendarIcon, CheckIcon, SparklesIcon } from "./Icons";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 const link = ({ isActive }) =>
@@ -35,6 +35,10 @@ const AppShell = ({ onSignOut, children }) => {
             <NavLink to="/diary" className={link}>
               <BookIcon width={16} height={16} aria-hidden="true" />
               <span className="max-[439px]:sr-only">Diary</span>
+            </NavLink>
+            <NavLink to="/mantra" className={link}>
+              <SparklesIcon width={16} height={16} aria-hidden="true" />
+              <span className="max-[439px]:sr-only">Mantra</span>
             </NavLink>
           </nav>
         </div>
