@@ -11,7 +11,7 @@ const STEP = 1000;
 // Remembers (in this browser) that someone removed habits from a week, so emptying a week on
 // purpose is respected and the habits aren't carried back in.
 const clearedKey = (userId, weekKey) => `kaizen.cleared.${userId}.${weekKey}`;
-const wasCleared = (userId, weekKey) => {
+export const wasCleared = (userId, weekKey) => {
   try {
     return localStorage.getItem(clearedKey(userId, weekKey)) === "1";
   } catch {

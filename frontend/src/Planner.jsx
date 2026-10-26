@@ -6,6 +6,7 @@ import DayPlan from "./components/DayPlan";
 import GoalModal from "./components/GoalModal";
 import GoalsPanel from "./components/GoalsPanel";
 import { ChevronLeftIcon, ChevronRightIcon } from "./components/Icons";
+import MonthView from "./components/MonthView";
 import Notes from "./components/Notes";
 import Sidebar from "./components/Sidebar";
 import TaskTable from "./components/TaskTable";
@@ -49,6 +50,8 @@ const Planner = () => {
   const [confirmReset, setConfirmReset] = useState(false);
   // null = closed, {} = adding a goal, { goal } = viewing/editing one
   const [goalModal, setGoalModal] = useState(null);
+  const [view, setView] = useState("week"); // "week" | "month"
+  const [monthStart, setMonthStart] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
 
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -88,6 +91,13 @@ const Planner = () => {
     };
   }, [week.tasks]);
 
+  const goToMonth = (offset) => setMonthStart((m) => new Date(m.getFullYear(), m.getMonth() + offset, 1));
+  const showView = (next) => {
+    if (next === view) return;
+    setView(next);
+    // the month view writes marks directly, so the week reloads to show them
+    if (next === "week") week.retryLoad();
+  };
   const goToWeek = (offsetWeeks) => setMonday((m) => addDays(m, offsetWeeks * 7));
   const exportCsv = () =>
     downloadCsv(`habits-${weekKey}.csv`, buildCsv(week.tasks, week.notes));
@@ -140,7 +150,10 @@ const Planner = () => {
           ready={week.ready}
           goals={goals.goals}
           diaryDays={diary.byDate}
-          onPick={(day) => setMonday(mondayOf(day))}
+          onPick={(day) => {
+            setMonday(mondayOf(day));
+            setMonthStart(new Date(day.getFullYear(), day.getMonth(), 1));
+          }}
           onPrint={() => window.print()}
           onCsv={exportCsv}
           onReset={() => setConfirmReset(true)}
@@ -162,6 +175,62 @@ const Planner = () => {
             </div>
           </div>
 
+          {/* Week | Month */}
+          <div
+            role="group"
+            aria-label="Planner view"
+            className="no-print mb-5 inline-flex gap-1 rounded-full border border-line bg-surface-2 p-1"
+          >
+            {[
+              { id: "week", label: "Week" },
+              { id: "month", label: "Month" },
+            ].map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                aria-pressed={view === v.id}
+                onClick={() => showView(v.id)}
+                className={`min-h-10 min-w-20 cursor-pointer rounded-full px-5 text-sm font-medium transition-colors ${
+                  view === v.id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          {view === "month" ? (
+            <div className="no-print">
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                    {monthStart.getFullYear()}
+                  </p>
+                  <h2 className="font-display text-5xl leading-tight tracking-tight sm:text-6xl">
+                    {new Intl.DateTimeFormat(undefined, { month: "long" }).format(monthStart)}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" className={navBtn} onClick={() => goToMonth(-1)} aria-label="Previous month">
+                    <ChevronLeftIcon />
+                  </button>
+                  <button
+                    type="button"
+                    className="min-h-11 cursor-pointer rounded-full border border-line px-5 text-sm font-medium transition-colors hover:bg-surface-2 disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent"
+                    onClick={() => setMonthStart(new Date(now.getFullYear(), now.getMonth(), 1))}
+                    disabled={monthStart.getFullYear() === now.getFullYear() && monthStart.getMonth() === now.getMonth()}
+                  >
+                    Today
+                  </button>
+                  <button type="button" className={navBtn} onClick={() => goToMonth(1)} aria-label="Next month">
+                    <ChevronRightIcon />
+                  </button>
+                </div>
+              </div>
+              <MonthView key={toKey(monthStart)} monthStart={monthStart} userId={user.id} todayKey={todayKey} />
+            </div>
+          ) : (
+            <>
           {/* Week header */}
           <div className="no-print mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -266,6 +335,8 @@ const Planner = () => {
               />
               <Notes value={week.notes} onChange={week.setNotes} disabled={!week.ready} />
             </div>
+          )}
+            </>
           )}
         </main>
       </div>
