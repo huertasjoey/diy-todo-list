@@ -7,6 +7,50 @@ const monthFmt = new Intl.DateTimeFormat(undefined, { month: "long", year: "nume
 const dayIdx = (d) => (d.getDay() + 6) % 7;
 
 const CHART_H = 140;
+const SHORT_DAY = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+// Black bars on a 0-100% scale with faint guide lines. `wide` is for a few chunky bars (weeks).
+const Chart = ({ bars, label, wide = false }) => (
+  <div className="flex gap-2" role="img" aria-label={label}>
+    <div className="relative shrink-0 text-right text-[10px] tabular-nums text-muted" style={{ height: CHART_H, width: 30 }}>
+      {[100, 75, 50, 25, 0].map((v) => (
+        <span key={v} className="absolute right-0 -translate-y-1/2" style={{ top: `${100 - v}%` }}>
+          {v}%
+        </span>
+      ))}
+    </div>
+    <div className="min-w-0 flex-1">
+      <div
+        className={`relative flex items-end border-b border-l border-line ${wide ? "justify-around gap-2 px-2" : "gap-[3px] pl-1"}`}
+        style={{ height: CHART_H }}
+      >
+        {[25, 50, 75, 100].map((v) => (
+          <span key={v} aria-hidden="true" className="pointer-events-none absolute inset-x-0 border-t border-line/60" style={{ bottom: `${v}%` }} />
+        ))}
+        {bars.map((b) => (
+          <div
+            key={b.key}
+            title={b.title}
+            className={`relative min-w-0 rounded-t-[3px] transition-[height] duration-300 ${wide ? "w-full max-w-14" : "flex-1"} ${b.today ? "bg-accent" : "bg-ink"}`}
+            style={{ height: `${Math.max(b.future ? 0 : b.percent, b.future ? 0 : 1)}%` }}
+          />
+        ))}
+      </div>
+      <div className={`flex ${wide ? "justify-around gap-2 px-2" : "gap-[3px] pl-1"}`}>
+        {bars.map((b) => (
+          <span
+            key={b.key}
+            aria-hidden="true"
+            className={`min-w-0 text-[10px] leading-none text-muted ${wide ? "w-full max-w-14 pt-2 text-center" : "flex-1 pt-1.5 text-center"} ${b.today ? "font-bold text-ink" : ""}`}
+            style={wide ? undefined : { writingMode: "vertical-rl", transform: "rotate(180deg)", height: 28 }}
+          >
+            {b.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 /** The month at a glance: a daily progress chart, then every habit against every day. */
 const MonthView = ({ monthStart, userId, todayKey }) => {
@@ -34,6 +78,20 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
     return out;
   }, [days]);
 
+  // each week's average over its days so far (a week that hasn't started shows empty)
+  const weekly = useMemo(() => {
+    let at = 0;
+    return groups.map((g) => {
+      const slice = perDay.slice(at, at + g.count).filter((_, i) => toKey(days[at + i]) <= todayKey);
+      at += g.count;
+      return {
+        key: g.key,
+        future: slice.length === 0,
+        percent: slice.length ? Math.round(slice.reduce((n, d) => n + d.percent, 0) / slice.length) : 0,
+      };
+    });
+  }, [groups, perDay, days, todayKey]);
+
   const elapsed = perDay.filter((_, i) => toKey(days[i]) <= todayKey);
   const average = elapsed.length && habits.length ? Math.round(elapsed.reduce((n, d) => n + d.percent, 0) / elapsed.length) : 0;
 
@@ -54,42 +112,50 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
 
   return (
     <div className={`transition-opacity ${status === "loading" ? "opacity-50" : ""}`} aria-busy={status === "loading"}>
-      {/* daily progress */}
-      <section aria-label={`Daily progress for ${monthFmt.format(monthStart)}`} className="paper rounded-2xl border border-line p-4 sm:p-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Daily progress</h3>
-          <p className="text-sm text-muted">
-            Average so far <span className="font-display text-2xl tabular-nums text-ink">{average}%</span>
-          </p>
-        </div>
+      {/* progress charts: a black title bar over each, like a printed tracker */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)]">
+        <section aria-label={`Daily progress for ${monthFmt.format(monthStart)}`} className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <h3 className="bg-ink px-4 py-2.5 text-center text-sm font-bold tracking-wide text-bg">Daily Progress</h3>
+          <div className="p-3 sm:p-4">
+            <Chart
+              role="img"
+              label={`Average ${average} percent of habits done per day so far this month`}
+              bars={perDay.map((d, i) => {
+                const key = toKey(days[i]);
+                return {
+                  key,
+                  percent: key > todayKey ? 0 : d.percent,
+                  future: key > todayKey,
+                  today: key === todayKey,
+                  label: SHORT_DAY[dayIdx(days[i])],
+                  title: `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: ${d.done} of ${habits.length} habits (${d.percent}%)`,
+                };
+              })}
+            />
+            <p className="mt-2 text-right text-xs text-muted">
+              Average so far <span className="font-semibold tabular-nums text-ink">{average}%</span>
+            </p>
+          </div>
+        </section>
 
-        <div className="mt-4 flex gap-2" role="img" aria-label={`Average ${average} percent of habits done per day so far this month`}>
-          <div className="flex shrink-0 flex-col justify-between pb-5 text-right text-[10px] tabular-nums text-muted" style={{ height: CHART_H + 20 }}>
-            <span>100%</span>
-            <span>50%</span>
-            <span>0%</span>
+        <section aria-label="Weekly progress" className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <h3 className="bg-ink px-4 py-2.5 text-center text-sm font-bold tracking-wide text-bg">Weekly Progress</h3>
+          <div className="p-3 sm:p-4">
+            <Chart
+              role="img"
+              label="Average percent of habits done in each week of the month"
+              wide
+              bars={weekly.map((w, i) => ({
+                key: w.key,
+                percent: w.percent,
+                future: w.future,
+                label: `week ${i + 1}`,
+                title: `Week ${i + 1}: ${w.percent}% average`,
+              }))}
+            />
           </div>
-          <div className="flex min-w-0 flex-1 items-end gap-[3px] border-b border-l border-line pl-1" style={{ height: CHART_H + 20 }}>
-            {perDay.map((d, i) => {
-              const key = toKey(days[i]);
-              const future = key > todayKey;
-              const isToday = key === todayKey;
-              return (
-                <div key={key} className="flex min-w-0 flex-1 flex-col items-center justify-end" style={{ height: "100%" }}>
-                  <div
-                    title={`${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: ${d.done} of ${habits.length} habits (${d.percent}%)`}
-                    className={`w-full rounded-t-[3px] transition-[height] duration-300 ${future ? "bg-line/60" : isToday ? "bg-accent" : "bg-ink/80"}`}
-                    style={{ height: future ? 3 : Math.max(3, (d.percent / 100) * CHART_H) }}
-                  />
-                  <span className={`mt-1 h-4 text-[9px] leading-4 tabular-nums ${isToday ? "font-bold text-ink" : "text-muted"}`}>
-                    {days[i].getDate()}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {/* the month grid */}
       <div className="habit-card mt-6 overflow-hidden rounded-2xl border border-line bg-surface">
