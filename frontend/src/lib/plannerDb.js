@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { uuid } from "./uuid";
 
 // All planner reads and writes go through here. Every table is protected by
 // Row Level Security, so each query only ever sees the signed-in user's rows.
@@ -7,14 +8,38 @@ const check = ({ error }) => {
   if (error) throw new Error(error.message);
 };
 
-export const loadWeek = async (weekStart) => {
+// The habit names (never the check marks) from the latest earlier week that had any.
+const carriedHabits = async (weekStart) => {
+  const { data, error } = await supabase
+    .from("weeks")
+    .select("week_start, week_tasks(position, text)")
+    .lt("week_start", weekStart)
+    .order("week_start", { ascending: false })
+    .limit(8);
+  if (error) throw new Error(error.message);
+  const prev = data.find((w) => w.week_tasks.some((t) => t.text.trim()));
+  if (!prev) return [];
+  return prev.week_tasks
+    .filter((t) => t.text.trim())
+    .sort((a, b) => a.position - b.position)
+    .map((t) => ({ id: uuid(), position: t.position, text: t.text, days: Array(7).fill(false) }));
+};
+
+/**
+ * Loads one week. With `carry`, a week that has never been saved starts with last week's
+ * habits (unchecked) and is flagged `carried` so the caller stores them.
+ */
+export const loadWeek = async (weekStart, { carry = false } = {}) => {
   const { data, error } = await supabase
     .from("weeks")
     .select("id, notes, week_tasks(id, position, text, days)")
     .eq("week_start", weekStart)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) return { weekId: null, notes: "", tasks: [] };
+  if (!data) {
+    const tasks = carry ? await carriedHabits(weekStart) : [];
+    return { weekId: null, notes: "", tasks, carried: tasks.length > 0 };
+  }
 
   return {
     weekId: data.id,

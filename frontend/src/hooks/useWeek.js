@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { mondayOf, toKey } from "../lib/dates";
 import { loadWeek, saveWeekJob } from "../lib/plannerDb";
 import { uuid } from "../lib/uuid";
 
@@ -122,7 +123,8 @@ export default function useWeek(weekKey, userId) {
     (async () => {
       await flush();
       try {
-        const data = await loadWeek(weekKey);
+        // habits carry on from week to week, but only into this week and later, never into the past
+        const data = await loadWeek(weekKey, { carry: weekKey >= toKey(mondayOf(new Date())) });
         if (cancelled) return;
         if (data.weekId) weekIds.current.set(weekKey, data.weekId);
         const next = { tasks: padRows(data.tasks), notes: data.notes };
@@ -130,6 +132,10 @@ export default function useWeek(weekKey, userId) {
         setWeek(next);
         readyRef.current = true;
         setStatus("saved");
+        // store the carried habits now, so removing one later really removes it
+        if (data.carried) {
+          schedule(weekKey, { tasks: new Map(data.tasks.map((t) => [t.id, snapshot(t)])) });
+        }
       } catch (error) {
         if (cancelled) return;
         setStatus("loadError");
@@ -141,7 +147,7 @@ export default function useWeek(weekKey, userId) {
       cancelled = true;
       flush();
     };
-  }, [weekKey, reloads, flush]);
+  }, [weekKey, reloads, flush, schedule]);
 
   // Quietly pick up changes made on another device or tab when this one regains focus.
   // Skipped while anything here is unsaved, so it can never overwrite an edit in progress.
