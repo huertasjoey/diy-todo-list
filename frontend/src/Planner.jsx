@@ -92,8 +92,10 @@ const Planner = () => {
   }, [week.tasks]);
 
   const goToMonth = (offset) => setMonthStart((m) => new Date(m.getFullYear(), m.getMonth() + offset, 1));
-  const showView = (next) => {
+  const showView = async (next) => {
     if (next === view) return;
+    // anything still waiting to save (a habit just removed, say) goes out before the month reads it
+    if (next === "month") await week.flush();
     setView(next);
     // the month view writes marks directly, so the week reloads to show them
     if (next === "week") week.retryLoad();

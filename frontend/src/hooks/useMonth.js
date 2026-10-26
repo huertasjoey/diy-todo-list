@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { addDays, mondayOf, toKey } from "../lib/dates";
-import { loadWeek, saveWeekJob } from "../lib/plannerDb";
+import { carriedHabits, loadWeek, saveWeekJob } from "../lib/plannerDb";
 import { uuid } from "../lib/uuid";
 import { wasCleared } from "./useWeek";
 
@@ -15,6 +15,7 @@ const dayIndex = (date) => (date.getDay() + 6) % 7; // Monday = 0
  */
 export default function useMonth(monthStart, userId) {
   const [weeks, setWeeks] = useState(() => new Map()); // weekKey -> { weekId, tasks }
+  const [upcoming, setUpcoming] = useState([]); // habit names for a month that hasn't started
   const [status, setStatus] = useState("loading");
   const [reloads, setReloads] = useState(0);
   const weeksRef = useRef(weeks);
@@ -53,8 +54,11 @@ export default function useMonth(monthStart, userId) {
           }
           next.set(wk, { weekId, tasks: data.tasks });
         }
+        // a month entirely in the future has no weeks yet: it shows the habits that will carry into it
+        const names = mondays[0] > thisMonday ? (await carriedHabits(mondays[0])).map((t) => t.text.trim()) : [];
         if (cancelled) return;
         weeksRef.current = next;
+        setUpcoming(names);
         setWeeks(next);
         setStatus("ready");
       } catch (e) {
@@ -68,17 +72,18 @@ export default function useMonth(monthStart, userId) {
     };
   }, [monthKey, days, userId, reloads]);
 
-  // the habits seen in any week of the month, in the order they first appear
+  // The habits listed are the ones in the latest week up to today, so removing a habit in the
+  // Week view removes it here too. Marks already ticked in earlier weeks stay stored, and come
+  // back if the same habit is added again. A month that has ended is judged by its own last week.
   const habits = useMemo(() => {
-    const seen = new Set();
-    for (const w of weeks.values()) {
-      for (const t of w.tasks) {
-        const text = t.text.trim();
-        if (text) seen.add(text);
-      }
-    }
-    return [...seen];
-  }, [weeks]);
+    const thisMonday = toKey(mondayOf(new Date()));
+    const ordered = [...weeks].sort(([a], [b]) => (a < b ? -1 : 1));
+    const names = (w) => [...new Set(w.tasks.filter((t) => t.text.trim()).sort((a, b) => a.position - b.position).map((t) => t.text.trim()))];
+    // a week that was opened and saved counts even when it is empty (everything was removed on purpose)
+    const counts = ([k, w]) => k <= thisMonday && (w.weekId || w.tasks.some((t) => t.text.trim()));
+    const ref = ordered.filter(counts).at(-1) ?? ordered.filter(([, w]) => w.tasks.some((t) => t.text.trim())).at(-1);
+    return ref ? names(ref[1]) : upcoming;
+  }, [weeks, upcoming]);
 
   const isChecked = useCallback(
     (text, date) => {

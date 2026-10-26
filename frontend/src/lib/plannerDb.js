@@ -9,7 +9,7 @@ const check = ({ error }) => {
 };
 
 // The habit names (never the check marks) from the latest earlier week that had any.
-const carriedHabits = async (weekStart) => {
+export const carriedHabits = async (weekStart) => {
   const { data, error } = await supabase
     .from("weeks")
     .select("week_start, week_tasks(position, text)")
