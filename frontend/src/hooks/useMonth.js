@@ -85,6 +85,15 @@ export default function useMonth(monthStart, userId) {
     return ref ? names(ref[1]) : upcoming;
   }, [weeks, upcoming]);
 
+  // habits that were ticked or listed earlier in the month but have since been removed
+  const removed = useMemo(() => {
+    const seen = new Set();
+    for (const [, w] of [...weeks].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      for (const t of w.tasks) if (t.text.trim()) seen.add(t.text.trim());
+    }
+    return [...seen].filter((h) => !habits.includes(h));
+  }, [weeks, habits]);
+
   const isChecked = useCallback(
     (text, date) => {
       const task = weeks.get(toKey(mondayOf(date)))?.tasks.find((t) => t.text.trim() === text);
@@ -134,5 +143,5 @@ export default function useMonth(monthStart, userId) {
     });
   };
 
-  return { days, habits, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
+  return { days, habits, removed, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
 }

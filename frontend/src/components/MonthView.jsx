@@ -54,7 +54,7 @@ const Chart = ({ bars, label, wide = false }) => (
 
 /** The month at a glance: a daily progress chart, then every habit against every day. */
 const MonthView = ({ monthStart, userId, todayKey }) => {
-  const { days, habits, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
+  const { days, habits, removed, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
   const ready = status === "ready";
 
   // for each day: how many habits were done, and the share of all habits
@@ -159,7 +159,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
 
       {/* the month grid */}
       <div className="habit-card mt-6 overflow-hidden rounded-2xl border border-line bg-surface">
-        {habits.length === 0 && ready ? (
+        {habits.length === 0 && removed.length === 0 && ready ? (
           <p className="px-6 py-14 text-center text-sm text-muted">
             No habits yet. Switch to the Week view and add some. They will show up here.
           </p>
@@ -212,16 +212,22 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                 </tr>
               </thead>
               <tbody>
-                {habits.map((h) => {
+                {[...habits, ...removed].map((h) => {
+                  const gone = removed.includes(h);
                   const done = days.filter((d) => isChecked(h, d)).length;
                   return (
-                    <tr key={h} className="group border-t border-line transition-colors hover:bg-surface-2/50">
+                    <tr key={h} className={`group border-t border-line transition-colors hover:bg-surface-2/50 ${gone ? "opacity-60" : ""}`}>
                       <th
                         scope="row"
                         className="sticky left-0 z-[1] max-w-[11rem] truncate bg-surface px-4 py-0 text-left text-sm font-normal group-hover:bg-surface-2 sm:max-w-xs"
                         title={h}
                       >
-                        {h}
+                        <span className={gone ? "line-through decoration-muted/60" : ""}>{h}</span>
+                        {gone && (
+                          <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-muted no-underline">
+                            Removed
+                          </span>
+                        )}
                       </th>
                       {days.map((d) => {
                         const on = isChecked(h, d);
@@ -233,7 +239,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                                 type="checkbox"
                                 className="peer sr-only"
                                 checked={on}
-                                disabled={!ready}
+                                disabled={!ready || gone}
                                 onChange={() => toggle(h, d)}
                                 aria-label={`${DAY_NAMES[dayIdx(d)]} ${d.getDate()}: ${h}`}
                               />
@@ -258,7 +264,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
           </div>
         )}
       </div>
-      <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too.</p>
+      <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
     </div>
   );
 };
