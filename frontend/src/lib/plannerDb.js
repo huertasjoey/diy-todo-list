@@ -36,17 +36,22 @@ export const loadWeek = async (weekStart, { carry = false } = {}) => {
     .eq("week_start", weekStart)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) {
-    const tasks = carry ? await carriedHabits(weekStart) : [];
-    return { weekId: null, notes: "", tasks, carried: tasks.length > 0 };
+  const stored = data
+    ? data.week_tasks
+        .map((t) => ({ id: t.id, position: t.position, text: t.text, days: t.days }))
+        .sort((a, b) => a.position - b.position)
+    : [];
+  // a week with no habits yet (never saved, or saved with only notes) starts from the previous one
+  if (stored.length === 0 && carry) {
+    const tasks = await carriedHabits(weekStart);
+    if (tasks.length) return { weekId: data?.id ?? null, notes: data?.notes ?? "", tasks, carried: true };
   }
+  if (!data) return { weekId: null, notes: "", tasks: [] };
 
   return {
     weekId: data.id,
     notes: data.notes,
-    tasks: data.week_tasks
-      .map((t) => ({ id: t.id, position: t.position, text: t.text, days: t.days }))
-      .sort((a, b) => a.position - b.position),
+    tasks: stored,
   };
 };
 

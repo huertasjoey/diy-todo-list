@@ -8,6 +8,24 @@ export const MIN_ROWS = 15;
 const SAVE_DELAY = 500;
 const STEP = 1000;
 
+// Remembers (in this browser) that someone removed habits from a week, so emptying a week on
+// purpose is respected and the habits aren't carried back in.
+const clearedKey = (userId, weekKey) => `kaizen.cleared.${userId}.${weekKey}`;
+const wasCleared = (userId, weekKey) => {
+  try {
+    return localStorage.getItem(clearedKey(userId, weekKey)) === "1";
+  } catch {
+    return false;
+  }
+};
+const markCleared = (userId, weekKey) => {
+  try {
+    localStorage.setItem(clearedKey(userId, weekKey), "1");
+  } catch {
+    // without storage the worst case is habits returning to a week emptied on purpose
+  }
+};
+
 const blankTask = (position) => ({
   id: uuid(),
   position,
@@ -124,7 +142,9 @@ export default function useWeek(weekKey, userId) {
       await flush();
       try {
         // habits carry on from week to week, but only into this week and later, never into the past
-        const data = await loadWeek(weekKey, { carry: weekKey >= toKey(mondayOf(new Date())) });
+        const data = await loadWeek(weekKey, {
+          carry: weekKey >= toKey(mondayOf(new Date())) && !wasCleared(userId, weekKey),
+        });
         if (cancelled) return;
         if (data.weekId) weekIds.current.set(weekKey, data.weekId);
         const next = { tasks: padRows(data.tasks), notes: data.notes };
@@ -147,7 +167,7 @@ export default function useWeek(weekKey, userId) {
       cancelled = true;
       flush();
     };
-  }, [weekKey, reloads, flush, schedule]);
+  }, [weekKey, reloads, flush, schedule, userId]);
 
   // Quietly pick up changes made on another device or tab when this one regains focus.
   // Skipped while anything here is unsaved, so it can never overwrite an edit in progress.
@@ -216,6 +236,7 @@ export default function useWeek(weekKey, userId) {
 
   const deleteTask = (id) => {
     if (!readyRef.current) return;
+    markCleared(userId, keyRef.current);
     const w = weekRef.current;
     commit(
       { ...w, tasks: padRows(w.tasks.filter((t) => t.id !== id)) },
