@@ -237,9 +237,9 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                                 disabled={!ready}
                                 aria-label={`Delete ${h} and its marks from this month`}
                                 title="Delete for good"
-                                className="ml-auto flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+                                className="flex min-h-9 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 text-xs font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
                               >
-                                <TrashIcon width={16} height={16} />
+                                <TrashIcon width={14} height={14} /> Delete
                               </button>
                             </>
                           )}
