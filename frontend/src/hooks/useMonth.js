@@ -143,5 +143,31 @@ export default function useMonth(monthStart, userId) {
     });
   };
 
-  return { days, habits, removed, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
+  // Deletes a habit's rows from every week of this month (used for habits already removed from the Week view).
+  const removeHabit = (text) => {
+    if (status !== "ready") return;
+    const cur = weeksRef.current;
+    const next = new Map();
+    const jobs = [];
+    for (const [wk, w] of cur) {
+      const gone = w.tasks.filter((t) => t.text.trim() === text);
+      next.set(wk, gone.length ? { ...w, tasks: w.tasks.filter((t) => t.text.trim() !== text) } : w);
+      if (gone.length) jobs.push([wk, w.weekId, new Map(gone.map((t) => [t.id, null]))]);
+    }
+    weeksRef.current = next;
+    setWeeks(next);
+    for (const [wk, weekId, tasks] of jobs) {
+      chain.current = chain.current.then(async () => {
+        try {
+          await saveWeekJob({ userId, weekStart: wk, weekId, job: { tasks } });
+        } catch (e) {
+          toast.error(`Couldn't delete: ${e.message}`);
+          setReloads((n) => n + 1);
+        }
+      });
+    }
+    toast.success("Habit deleted");
+  };
+
+  return { days, habits, removed, removeHabit, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
 }

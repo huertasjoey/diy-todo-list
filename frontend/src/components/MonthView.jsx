@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DAY_INITIALS, DAY_NAMES, mondayOf, toKey } from "../lib/dates";
 import useMonth from "../hooks/useMonth";
-import { CheckIcon } from "./Icons";
+import ConfirmDialog from "./ConfirmDialog";
+import { CheckIcon, TrashIcon } from "./Icons";
 
 const monthFmt = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 const dayIdx = (d) => (d.getDay() + 6) % 7;
@@ -54,8 +55,9 @@ const Chart = ({ bars, label, wide = false }) => (
 
 /** The month at a glance: a daily progress chart, then every habit against every day. */
 const MonthView = ({ monthStart, userId, todayKey }) => {
-  const { days, habits, removed, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
+  const { days, habits, removed, removeHabit, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
   const ready = status === "ready";
+  const [confirmRemove, setConfirmRemove] = useState(null); // the removed habit waiting to be deleted for good
 
   // for each day: how many habits were done, and the share of all habits
   const perDay = useMemo(
@@ -216,24 +218,38 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                   const gone = removed.includes(h);
                   const done = days.filter((d) => isChecked(h, d)).length;
                   return (
-                    <tr key={h} className={`group border-t border-line transition-colors hover:bg-surface-2/50 ${gone ? "opacity-60" : ""}`}>
+                    <tr key={h} className={`group border-t border-line transition-colors hover:bg-surface-2/50 `}>
                       <th
                         scope="row"
                         className="sticky left-0 z-[1] max-w-[11rem] truncate bg-surface px-4 py-0 text-left text-sm font-normal group-hover:bg-surface-2 sm:max-w-xs"
                         title={h}
                       >
-                        <span className={gone ? "line-through decoration-muted/60" : ""}>{h}</span>
-                        {gone && (
-                          <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-muted no-underline">
-                            Removed
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <span className={`min-w-0 truncate ${gone ? "text-muted line-through decoration-muted/60" : ""}`}>{h}</span>
+                          {gone && (
+                            <>
+                              <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
+                                Removed
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmRemove(h)}
+                                disabled={!ready}
+                                aria-label={`Delete ${h} and its marks from this month`}
+                                title="Delete for good"
+                                className="ml-auto flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+                              >
+                                <TrashIcon width={16} height={16} />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </th>
                       {days.map((d) => {
                         const on = isChecked(h, d);
                         const today = toKey(d) === todayKey;
                         return (
-                          <td key={toKey(d)} className={`p-0 ${today ? "bg-accent-soft/50" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
+                          <td key={toKey(d)} className={`p-0 ${gone ? "opacity-50" : ""} ${today ? "bg-accent-soft/50" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
                             <label className="relative flex h-10 w-9 cursor-pointer items-center justify-center has-[:disabled]:cursor-default">
                               <input
                                 type="checkbox"
@@ -265,6 +281,18 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
         )}
       </div>
       <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
+      <ConfirmDialog
+        open={confirmRemove !== null}
+        title="Delete this habit for good?"
+        confirmLabel="Delete habit"
+        onCancel={() => setConfirmRemove(null)}
+        onConfirm={() => {
+          removeHabit(confirmRemove);
+          setConfirmRemove(null);
+        }}
+      >
+        “{confirmRemove}” and every mark you made on it this month will be permanently deleted. This can&apos;t be undone.
+      </ConfirmDialog>
     </div>
   );
 };
