@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { DAY_INITIALS, DAY_NAMES, mondayOf, toKey } from "../lib/dates";
+import { DAY_INITIALS, DAY_NAMES, mondayOf, parseKey, toKey } from "../lib/dates";
+import useCellMenu from "../hooks/useCellMenu";
 import useMonth from "../hooks/useMonth";
+import CellMenu from "./CellMenu";
 import ConfirmDialog from "./ConfirmDialog";
 import { CheckIcon, MoonIcon, TrashIcon } from "./Icons";
 
@@ -55,22 +57,50 @@ const Chart = ({ bars, label, wide = false }) => (
   </div>
 );
 
+// One tickable box. Right-click, the menu key, or a long press opens the rest-day menu.
+const Box = ({ on, disabled, label, onChange, onMenu }) => {
+  const menu = useCellMenu((x, y) => onMenu?.(x, y));
+  return (
+    <label
+      className="relative flex h-10 w-9 cursor-pointer items-center justify-center has-[:disabled]:cursor-default"
+      {...(onMenu ? menu : {})}
+    >
+      <input type="checkbox" className="peer sr-only" checked={on} disabled={disabled} onChange={onChange} aria-label={label} />
+      <span
+        aria-hidden="true"
+        className="flex h-[22px] w-[22px] items-center justify-center rounded-md border border-muted/60 text-accent-ink transition-colors hover:border-accent peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
+      >
+        {on && <CheckIcon width={14} height={14} strokeWidth={3} />}
+      </span>
+    </label>
+  );
+};
+
 /** The month at a glance: a daily progress chart, then every habit against every day. */
 const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
   const { days, habits, removed, removeHabit, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
   const ready = status === "ready";
   const isRest = (d) => restDays.isRest(toKey(d));
-  const activeDays = days.filter((d) => !isRest(d)).length;
+  const [menu, setMenu] = useState(null); // the rest-day menu for one habit on one day
   const [confirmRemove, setConfirmRemove] = useState(null); // the removed habit waiting to be deleted for good
 
   // for each day: how many habits were done, and the share of all habits
   const perDay = useMemo(
     () =>
       days.map((d) => {
-        const done = habits.filter((h) => isChecked(h, d)).length;
-        return { done, rest: restDays.isRest(toKey(d)), percent: habits.length ? Math.round((done / habits.length) * 100) : 0 };
+        const key = toKey(d);
+        // habits that have something to tick today (a rest day can be set for one habit only)
+        const active = habits.filter((h) => !restDays.isOff(key, h));
+        const done = active.filter((h) => isChecked(h, d)).length;
+        return {
+          done,
+          total: active.length,
+          rest: restDays.isRest(key) || active.length === 0,
+          percent: active.length ? Math.round((done / active.length) * 100) : 0,
+        };
       }),
-    [days, habits, isChecked, restDays],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [days, habits, isChecked, restDays.rest, restDays.cells],
   );
 
   // week groups for the header: "Week 1" over the days that belong to it
@@ -135,7 +165,7 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                   future: key > todayKey,
                   today: key === todayKey,
                   label: SHORT_DAY[dayIdx(days[i])],
-                  title: d.rest ? `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: rest day` : `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: ${d.done} of ${habits.length} habits (${d.percent}%)`,
+                  title: d.rest ? `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: rest day` : `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: ${d.done} of ${d.total} habits (${d.percent}%)`,
                 };
               })}
             />
@@ -221,7 +251,8 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
               <tbody>
                 {[...habits, ...removed].map((h) => {
                   const gone = removed.includes(h);
-                  const done = days.filter((d) => !isRest(d) && isChecked(h, d)).length;
+                  const activeDays = days.filter((d) => gone || !restDays.isOff(toKey(d), h)).length;
+                  const done = days.filter((d) => (gone || !restDays.isOff(toKey(d), h)) && isChecked(h, d)).length;
                   return (
                     <tr key={h} className={`group border-t border-line transition-colors hover:bg-surface-2/50 `}>
                       <th
@@ -251,26 +282,20 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                         </div>
                       </th>
                       {days.map((d) => {
-                        const on = isChecked(h, d) && !isRest(d);
+                        const off = !gone && restDays.isOff(toKey(d), h);
+                        const on = isChecked(h, d) && !off;
                         const today = toKey(d) === todayKey;
                         return (
-                          <td key={toKey(d)} className={`p-0 ${gone ? "opacity-50" : ""} ${isRest(d) ? "rest-day" : ""} ${today ? "bg-accent-soft/50" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
-                            <label className="relative flex h-10 w-9 cursor-pointer items-center justify-center has-[:disabled]:cursor-default">
-                              <input
-                                type="checkbox"
-                                className="peer sr-only"
-                                checked={on}
-                                disabled={!ready || gone || isRest(d)}
-                                onChange={() => toggle(h, d)}
-                                aria-label={`${DAY_NAMES[dayIdx(d)]} ${d.getDate()}: ${h}`}
-                              />
-                              <span
-                                aria-hidden="true"
-                                className="flex h-[22px] w-[22px] items-center justify-center rounded-md border border-muted/60 text-accent-ink transition-colors hover:border-accent peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
-                              >
-                                {on && <CheckIcon width={14} height={14} strokeWidth={3} />}
-                              </span>
-                            </label>
+                          <td key={toKey(d)} className={`p-0 ${gone ? "opacity-50" : ""} ${off || isRest(d) ? "rest-day" : ""} ${today ? "bg-accent-soft/50" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
+                            <Box
+                              on={on}
+                              disabled={!ready || gone || off}
+                              label={`${DAY_NAMES[dayIdx(d)]} ${d.getDate()}: ${h}`}
+                              onChange={() => toggle(h, d)}
+                              onMenu={
+                                !gone && !isRest(d) ? (x, y) => setMenu({ x, y, habit: h, date: toKey(d), day: dayIdx(d) }) : undefined
+                              }
+                            />
                           </td>
                         );
                       })}
@@ -314,7 +339,17 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
           </div>
         )}
       </div>
-      <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. Striped days are rest days and are skipped in every total. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
+      <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. Striped days are rest days and are skipped in every total. Right-click a box (or long-press on a phone) to set a rest day for just that habit. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
+      {menu && (
+        <CellMenu
+          x={menu.x}
+          y={menu.y}
+          title={`${menu.habit} · ${DAY_NAMES[menu.day]} ${parseKey(menu.date).getDate()}`}
+          rest={restDays.isCellRest(menu.date, menu.habit)}
+          onToggle={() => restDays.toggleCell(menu.date, menu.habit)}
+          onClose={() => setMenu(null)}
+        />
+      )}
       <ConfirmDialog
         open={confirmRemove !== null}
         title="Delete this habit for good?"

@@ -83,9 +83,10 @@ const Planner = () => {
   // Progress counts only rows that have a habit written on them, and skips rest days.
   const stats = useMemo(() => {
     const real = week.tasks.filter((t) => t.text.trim());
-    const active = dates.map((d) => !restDays.isRest(toKey(d)));
-    const total = real.length * active.filter(Boolean).length;
-    const checked = real.reduce((n, t) => n + t.days.filter((v, i) => v && active[i]).length, 0);
+    // a day doesn't count for a habit when it's a rest day for everyone or just for that habit
+    const on = (t, i) => !restDays.isOff(toKey(dates[i]), t.text);
+    const total = real.reduce((n, t) => n + t.days.filter((_, i) => on(t, i)).length, 0);
+    const checked = real.reduce((n, t) => n + t.days.filter((v, i) => v && on(t, i)).length, 0);
     return {
       habits: real.length,
       checked,
@@ -93,7 +94,7 @@ const Planner = () => {
       percent: total ? Math.round((checked / total) * 100) : 0,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [week.tasks, dates, restDays.rest]);
+  }, [week.tasks, dates, restDays.rest, restDays.cells]);
 
   const goToMonth = (offset) => setMonthStart((m) => new Date(m.getFullYear(), m.getMonth() + offset, 1));
   const showView = async (next) => {

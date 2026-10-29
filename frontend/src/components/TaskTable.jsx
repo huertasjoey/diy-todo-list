@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DAY_NAMES, DAY_SHORT, toKey } from "../lib/dates";
 import { STATUS, formatRangeText, goalStatus, percentLabel, progressPercent, progressText } from "../lib/goals";
+import CellMenu from "./CellMenu";
 import DayBox from "./DayBox";
 import { BookIcon, MoonIcon, PlusIcon, TrashIcon, UndoIcon } from "./Icons";
 
@@ -32,7 +33,8 @@ const TaskTable = ({
   restDays = { isRest: () => false, toggle: () => {} },
 }) => {
   const restFlags = dates.map((d) => restDays.isRest(toKey(d)));
-  const activeDays = restFlags.filter((r) => !r).length;
+  // right-click (or long-press) on a box: set that one habit's day as a rest day
+  const [menu, setMenu] = useState(null);
   // empty rows revealed on top of the default, by Enter or "Add habit"
   const [extra, setExtra] = useState(0);
 
@@ -214,8 +216,12 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
             )}
             <tbody>
               {week.map((task, index) => {
-                const done = task.days.filter((v, i) => v && !restFlags[i]).length;
-                const finished = task.text.trim() !== "" && activeDays > 0 && done === activeDays;
+                const habit = task.text.trim();
+                // this habit has nothing to tick on a day that is a rest day, either for everyone or just for it
+                const off = task.days.map((_, i) => restFlags[i] || (habit !== "" && restDays.isCellRest(toKey(dates[i]), habit)));
+                const activeDays = off.filter((o) => !o).length;
+                const done = task.days.filter((v, i) => v && !off[i]).length;
+                const finished = habit !== "" && activeDays > 0 && done === activeDays;
                 const name = task.text.trim() || `row ${index + 1}`;
                 return (
                   <tr
@@ -252,11 +258,16 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                     {task.days.map((checked, day) => (
                       <td
                         key={day}
-                        className={`p-0 text-center ${day === todayIndex ? "bg-accent-soft/50" : ""} ${restFlags[day] ? "rest-day" : ""}`}
+                        className={`p-0 text-center ${day === todayIndex ? "bg-accent-soft/50" : ""} ${off[day] ? "rest-day" : ""}`}
                       >
                         <DayBox
-                          checked={checked && !restFlags[day]}
-                          disabled={!ready || restFlags[day]}
+                          checked={checked && !off[day]}
+                          disabled={!ready || off[day]}
+                          onMenu={
+                            habit && !restFlags[day]
+                              ? (x, y) => setMenu({ x, y, habit, date: toKey(dates[day]), day })
+                              : undefined
+                          }
                           onChange={() => onToggle(task.id, day)}
                           label={`${DAY_NAMES[day]}: ${name}`}
                         />
@@ -301,6 +312,17 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
           </table>
         </div>
       </div>
+
+      {menu && (
+        <CellMenu
+          x={menu.x}
+          y={menu.y}
+          title={`${menu.habit} · ${DAY_NAMES[menu.day]}`}
+          rest={restDays.isCellRest(menu.date, menu.habit)}
+          onToggle={() => restDays.toggleCell(menu.date, menu.habit)}
+          onClose={() => setMenu(null)}
+        />
+      )}
 
       <button
         type="button"
