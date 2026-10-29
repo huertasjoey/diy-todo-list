@@ -115,6 +115,11 @@ const TaskTable = ({
                     >
                       <MoonIcon width={13} height={13} />
                     </button>
+                    {restFlags[i] && (
+                      <span aria-hidden="true" className="mt-0.5 block text-[9px] font-bold uppercase tracking-wider text-goal">
+                        Rest
+                      </span>
+                    )}
                   </th>
                 ))}
                 <th scope="col" className="w-16 px-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em]">
@@ -263,6 +268,7 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                         <DayBox
                           checked={checked && !off[day]}
                           disabled={!ready || off[day]}
+                          off={off[day]}
                           onMenu={
                             habit && !restFlags[day]
                               ? (x, y) => setMenu({ x, y, habit, date: toKey(dates[day]), day })

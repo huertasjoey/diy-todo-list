@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isoWeek, toKey } from "../lib/dates";
+import { levelFor } from "../lib/progress";
 import { CalendarIcon, DownloadIcon, PrinterIcon, UndoIcon } from "./Icons";
 import MiniCalendar from "./MiniCalendar";
 import ProgressRing from "./ProgressRing";
@@ -58,6 +59,12 @@ const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint,
               ? `${stats.checked} of ${stats.total} check-ins`
               : "Add a habit to start tracking"}
           </p>
+          {stats.total > 0 && (
+            <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold">
+              <span aria-hidden="true" className={`h-2 w-2 rounded-full ${levelFor(stats.percent).dot}`} />
+              {levelFor(stats.percent).label}
+            </p>
+          )}
           {stats.habits > 0 && (
             <p className="text-xs text-muted">
               {stats.habits} {stats.habits === 1 ? "habit" : "habits"}

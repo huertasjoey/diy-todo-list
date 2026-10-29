@@ -125,12 +125,13 @@ body {
 
 /* A rest day: soft diagonal stripes instead of boxes to tick */
 .rest-day {
+  background-color: color-mix(in srgb, var(--goal) 9%, transparent);
   background-image: repeating-linear-gradient(
     135deg,
     transparent 0,
-    transparent 6px,
-    color-mix(in srgb, var(--muted) 16%, transparent) 6px,
-    color-mix(in srgb, var(--muted) 16%, transparent) 7px
+    transparent 5px,
+    color-mix(in srgb, var(--goal) 30%, transparent) 5px,
+    color-mix(in srgb, var(--goal) 30%, transparent) 6px
   );
 }
 

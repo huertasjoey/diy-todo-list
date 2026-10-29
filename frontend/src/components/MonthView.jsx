@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { LEVELS, levelFor } from "../lib/progress";
 import { DAY_INITIALS, DAY_NAMES, mondayOf, parseKey, toKey } from "../lib/dates";
 import useCellMenu from "../hooks/useCellMenu";
 import useMonth from "../hooks/useMonth";
@@ -58,7 +59,7 @@ const Chart = ({ bars, label, wide = false }) => (
 );
 
 // One tickable box. Right-click, the menu key, or a long press opens the rest-day menu.
-const Box = ({ on, disabled, label, onChange, onMenu }) => {
+const Box = ({ on, off = false, disabled, label, onChange, onMenu }) => {
   const menu = useCellMenu((x, y) => onMenu?.(x, y));
   return (
     <label
@@ -66,12 +67,18 @@ const Box = ({ on, disabled, label, onChange, onMenu }) => {
       {...(onMenu ? menu : {})}
     >
       <input type="checkbox" className="peer sr-only" checked={on} disabled={disabled} onChange={onChange} aria-label={label} />
+      {off ? (
+        <span aria-hidden="true" title="Rest day" className="flex h-[22px] w-[22px] items-center justify-center rounded-md border border-goal/50 bg-goal-soft text-goal">
+          <MoonIcon width={12} height={12} />
+        </span>
+      ) : (
       <span
         aria-hidden="true"
         className="flex h-[22px] w-[22px] items-center justify-center rounded-md border border-muted/60 text-accent-ink transition-colors hover:border-accent peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
       >
         {on && <CheckIcon width={14} height={14} strokeWidth={3} />}
       </span>
+      )}
     </label>
   );
 };
@@ -130,6 +137,8 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
 
   const elapsed = perDay.filter((d, i) => !d.rest && toKey(days[i]) <= todayKey);
   const average = elapsed.length && habits.length ? Math.round(elapsed.reduce((n, d) => n + d.percent, 0) / elapsed.length) : 0;
+  const hasAverage = elapsed.length > 0 && habits.length > 0;
+  const level = levelFor(average);
 
   if (status === "loadError")
     return (
@@ -171,6 +180,11 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
             />
             <p className="mt-2 text-right text-xs text-muted">
               Average so far <span className="font-semibold tabular-nums text-ink">{average}%</span>
+              {hasAverage && (
+                <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-0.5 font-semibold text-ink">
+                  <span aria-hidden="true" className={`h-2 w-2 rounded-full ${level.dot}`} /> {level.label}
+                </span>
+              )}
             </p>
           </div>
         </section>
@@ -187,12 +201,41 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                 percent: w.percent,
                 future: w.future,
                 label: `week ${i + 1}`,
-                title: `Week ${i + 1}: ${w.percent}% average`,
+                title: `Week ${i + 1}: ${w.percent}% average, ${levelFor(w.percent).label}`,
               }))}
             />
           </div>
         </section>
       </div>
+
+      {/* the guide: the same scale for every week and month, so they can be compared */}
+      <section aria-label="Progress guide" className="mt-4 rounded-2xl border border-line bg-surface p-4 sm:p-5">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Progress guide</h3>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {LEVELS.map((l) => {
+            const current = hasAverage && l === level;
+            return (
+              <li
+                key={l.label}
+                aria-current={current ? "true" : undefined}
+                className={`rounded-xl border p-3 ${current ? "border-ink/60 bg-surface-2" : "border-line"}`}
+              >
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${l.dot}`} /> {l.label}
+                  {current && <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide text-muted">You</span>}
+                </p>
+                <p className="mt-0.5 text-xs tabular-nums text-muted">
+                  {l.min}–{l.max}%
+                </p>
+                <p className="mt-1 text-xs leading-snug text-muted">{l.note}</p>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-3 text-xs text-muted">
+          Use the same scale from month to month to see whether your habits are improving. Rest days are left out.
+        </p>
+      </section>
 
       {/* the month grid */}
       <div className="habit-card mt-6 overflow-hidden rounded-2xl border border-line bg-surface">
@@ -240,7 +283,7 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                     >
                       <span
                         aria-hidden="true"
-                        className={`mx-auto flex h-5 min-w-5 items-center justify-center rounded-full ${toKey(d) === todayKey ? "bg-accent text-accent-ink" : ""}`}
+                        className={`mx-auto flex h-5 min-w-5 items-center justify-center rounded-full ${toKey(d) === todayKey ? "bg-accent text-accent-ink" : ""} ${isRest(d) ? "text-goal font-bold" : ""}`}
                       >
                         {d.getDate()}
                       </span>
@@ -289,6 +332,7 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                           <td key={toKey(d)} className={`p-0 ${gone ? "opacity-50" : ""} ${off || isRest(d) ? "rest-day" : ""} ${today ? "bg-accent-soft/50" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
                             <Box
                               on={on}
+                              off={off}
                               disabled={!ready || gone || off}
                               label={`${DAY_NAMES[dayIdx(d)]} ${d.getDate()}: ${h}`}
                               onChange={() => toggle(h, d)}
@@ -324,7 +368,7 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                         <span
                           aria-hidden="true"
                           className={`flex h-[22px] w-[22px] items-center justify-center rounded-md border transition-colors ${
-                            isRest(d) ? "border-ink/60 bg-surface text-ink" : "border-dashed border-muted/40 text-muted/40 hover:border-muted hover:text-muted"
+                            isRest(d) ? "border-goal bg-goal text-bg" : "border-dashed border-muted/40 text-muted/40 hover:border-muted hover:text-muted"
                           }`}
                         >
                           <MoonIcon width={12} height={12} />
@@ -339,7 +383,15 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
           </div>
         )}
       </div>
-      <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. Striped days are rest days and are skipped in every total. Right-click a box (or long-press on a phone) to set a rest day for just that habit. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
+      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+        <span className="rest-day inline-flex h-5 w-5 items-center justify-center rounded-md border border-goal/50 text-goal">
+          <MoonIcon width={11} height={11} aria-hidden="true" />
+        </span>
+        <span>
+          <strong className="font-semibold text-ink">Rest day.</strong> Striped boxes with a moon are skipped, so they never count for or against you.
+        </span>
+      </p>
+      <p className="mt-2 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. Striped days are rest days and are skipped in every total. Right-click a box (or long-press on a phone) to set a rest day for just that habit. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
       {menu && (
         <CellMenu
           x={menu.x}
