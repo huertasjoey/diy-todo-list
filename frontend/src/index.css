@@ -123,6 +123,17 @@ body {
   box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent), 0 12px 32px -18px color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
+/* A rest day: soft diagonal stripes instead of boxes to tick */
+.rest-day {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 6px,
+    color-mix(in srgb, var(--muted) 16%, transparent) 6px,
+    color-mix(in srgb, var(--muted) 16%, transparent) 7px
+  );
+}
+
 /* Print-only elements stay hidden on screen */
 .print-only {
   display: none;

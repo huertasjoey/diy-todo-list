@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { DAY_INITIALS, DAY_NAMES, mondayOf, toKey } from "../lib/dates";
 import useMonth from "../hooks/useMonth";
 import ConfirmDialog from "./ConfirmDialog";
-import { CheckIcon, TrashIcon } from "./Icons";
+import { CheckIcon, MoonIcon, TrashIcon } from "./Icons";
 
 const monthFmt = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 const dayIdx = (d) => (d.getDay() + 6) % 7;
@@ -32,8 +32,10 @@ const Chart = ({ bars, label, wide = false }) => (
           <div
             key={b.key}
             title={b.title}
-            className={`relative min-w-0 rounded-t-[3px] transition-[height] duration-300 ${wide ? "w-full max-w-14" : "flex-1"} ${b.today ? "bg-accent" : "bg-ink"}`}
-            style={{ height: `${Math.max(b.future ? 0 : b.percent, b.future ? 0 : 1)}%` }}
+            className={`relative min-w-0 rounded-t-[3px] transition-[height] duration-300 ${wide ? "w-full max-w-14" : "flex-1"} ${
+              b.rest ? "rest-day border border-b-0 border-line" : b.today ? "bg-accent" : "bg-ink"
+            }`}
+            style={{ height: b.rest ? "10%" : `${Math.max(b.future ? 0 : b.percent, b.future ? 0 : 1)}%` }}
           />
         ))}
       </div>
@@ -54,9 +56,11 @@ const Chart = ({ bars, label, wide = false }) => (
 );
 
 /** The month at a glance: a daily progress chart, then every habit against every day. */
-const MonthView = ({ monthStart, userId, todayKey }) => {
+const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
   const { days, habits, removed, removeHabit, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
   const ready = status === "ready";
+  const isRest = (d) => restDays.isRest(toKey(d));
+  const activeDays = days.filter((d) => !isRest(d)).length;
   const [confirmRemove, setConfirmRemove] = useState(null); // the removed habit waiting to be deleted for good
 
   // for each day: how many habits were done, and the share of all habits
@@ -64,9 +68,9 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
     () =>
       days.map((d) => {
         const done = habits.filter((h) => isChecked(h, d)).length;
-        return { done, percent: habits.length ? Math.round((done / habits.length) * 100) : 0 };
+        return { done, rest: restDays.isRest(toKey(d)), percent: habits.length ? Math.round((done / habits.length) * 100) : 0 };
       }),
-    [days, habits, isChecked],
+    [days, habits, isChecked, restDays],
   );
 
   // week groups for the header: "Week 1" over the days that belong to it
@@ -84,7 +88,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
   const weekly = useMemo(() => {
     let at = 0;
     return groups.map((g) => {
-      const slice = perDay.slice(at, at + g.count).filter((_, i) => toKey(days[at + i]) <= todayKey);
+      const slice = perDay.slice(at, at + g.count).filter((d, i) => !d.rest && toKey(days[at + i]) <= todayKey);
       at += g.count;
       return {
         key: g.key,
@@ -94,7 +98,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
     });
   }, [groups, perDay, days, todayKey]);
 
-  const elapsed = perDay.filter((_, i) => toKey(days[i]) <= todayKey);
+  const elapsed = perDay.filter((d, i) => !d.rest && toKey(days[i]) <= todayKey);
   const average = elapsed.length && habits.length ? Math.round(elapsed.reduce((n, d) => n + d.percent, 0) / elapsed.length) : 0;
 
   if (status === "loadError")
@@ -126,11 +130,12 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                 const key = toKey(days[i]);
                 return {
                   key,
-                  percent: key > todayKey ? 0 : d.percent,
+                  percent: key > todayKey || d.rest ? 0 : d.percent,
+                  rest: d.rest,
                   future: key > todayKey,
                   today: key === todayKey,
                   label: SHORT_DAY[dayIdx(days[i])],
-                  title: `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: ${d.done} of ${habits.length} habits (${d.percent}%)`,
+                  title: d.rest ? `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: rest day` : `${DAY_NAMES[dayIdx(days[i])]} ${days[i].getDate()}: ${d.done} of ${habits.length} habits (${d.percent}%)`,
                 };
               })}
             />
@@ -190,7 +195,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                 </tr>
                 <tr className="bg-surface-2/60 text-[10px] font-semibold uppercase text-muted">
                   {days.map((d) => (
-                    <th key={toKey(d)} scope="col" aria-hidden="true" className={`min-w-9 px-0 pt-1 ${toKey(d) === todayKey ? "bg-accent-soft text-ink" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
+                    <th key={toKey(d)} scope="col" aria-hidden="true" className={`min-w-9 px-0 pt-1 ${toKey(d) === todayKey ? "bg-accent-soft text-ink" : ""} ${isRest(d) ? "rest-day" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
                       {DAY_INITIALS[dayIdx(d)]}
                     </th>
                   ))}
@@ -201,7 +206,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                       key={toKey(d)}
                       scope="col"
                       aria-label={`${DAY_NAMES[dayIdx(d)]} ${d.getDate()}${toKey(d) === todayKey ? ", today" : ""}`}
-                      className={`px-0 pb-1.5 font-medium ${toKey(d) === todayKey ? "bg-accent-soft" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}
+                      className={`px-0 pb-1.5 font-medium ${toKey(d) === todayKey ? "bg-accent-soft" : ""} ${isRest(d) ? "rest-day" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}
                     >
                       <span
                         aria-hidden="true"
@@ -216,7 +221,7 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
               <tbody>
                 {[...habits, ...removed].map((h) => {
                   const gone = removed.includes(h);
-                  const done = days.filter((d) => isChecked(h, d)).length;
+                  const done = days.filter((d) => !isRest(d) && isChecked(h, d)).length;
                   return (
                     <tr key={h} className={`group border-t border-line transition-colors hover:bg-surface-2/50 `}>
                       <th
@@ -246,16 +251,16 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                         </div>
                       </th>
                       {days.map((d) => {
-                        const on = isChecked(h, d);
+                        const on = isChecked(h, d) && !isRest(d);
                         const today = toKey(d) === todayKey;
                         return (
-                          <td key={toKey(d)} className={`p-0 ${gone ? "opacity-50" : ""} ${today ? "bg-accent-soft/50" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
+                          <td key={toKey(d)} className={`p-0 ${gone ? "opacity-50" : ""} ${isRest(d) ? "rest-day" : ""} ${today ? "bg-accent-soft/50" : ""} ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
                             <label className="relative flex h-10 w-9 cursor-pointer items-center justify-center has-[:disabled]:cursor-default">
                               <input
                                 type="checkbox"
                                 className="peer sr-only"
                                 checked={on}
-                                disabled={!ready || gone}
+                                disabled={!ready || gone || isRest(d)}
                                 onChange={() => toggle(h, d)}
                                 aria-label={`${DAY_NAMES[dayIdx(d)]} ${d.getDate()}: ${h}`}
                               />
@@ -269,18 +274,47 @@ const MonthView = ({ monthStart, userId, todayKey }) => {
                           </td>
                         );
                       })}
-                      <td className="border-l border-line px-2 text-xs tabular-nums text-muted" aria-label={`${done} of ${days.length} days`}>
-                        {done}/{days.length}
+                      <td className="border-l border-line px-2 text-xs tabular-nums text-muted" aria-label={`${done} of ${activeDays} days`}>
+                        {done}/{activeDays}
                       </td>
                     </tr>
                   );
                 })}
+                <tr className="border-t border-line bg-surface-2/40">
+                  <th scope="row" className="sticky left-0 z-[1] bg-surface-2 px-4 py-0 text-left text-sm font-normal text-muted">
+                    <span className="flex items-center gap-2">
+                      <MoonIcon width={14} height={14} aria-hidden="true" /> Rest day
+                    </span>
+                  </th>
+                  {days.map((d) => (
+                    <td key={toKey(d)} className={`p-0 ${dayIdx(d) === 0 ? "border-l border-line" : ""}`}>
+                      <button
+                        type="button"
+                        onClick={() => restDays.toggle(toKey(d))}
+                        aria-pressed={isRest(d)}
+                        aria-label={`${isRest(d) ? "Unmark" : "Mark"} ${DAY_NAMES[dayIdx(d)]} ${d.getDate()} as a rest day`}
+                        title={isRest(d) ? "Rest day (click to undo)" : "Mark as a rest day"}
+                        className="flex h-10 w-9 cursor-pointer items-center justify-center"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-[22px] w-[22px] items-center justify-center rounded-md border transition-colors ${
+                            isRest(d) ? "border-ink/60 bg-surface text-ink" : "border-dashed border-muted/40 text-muted/40 hover:border-muted hover:text-muted"
+                          }`}
+                        >
+                          <MoonIcon width={12} height={12} />
+                        </span>
+                      </button>
+                    </td>
+                  ))}
+                  <td className="border-l border-line" />
+                </tr>
               </tbody>
             </table>
           </div>
         )}
       </div>
-      <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
+      <p className="mt-3 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. Striped days are rest days and are skipped in every total. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
       <ConfirmDialog
         open={confirmRemove !== null}
         title="Delete this habit for good?"

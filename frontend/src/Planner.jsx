@@ -16,6 +16,7 @@ import useDayTasks from "./hooks/useDayTasks";
 import useDiaryStats from "./hooks/useDiaryStats";
 import useGoals from "./hooks/useGoals";
 import useNow from "./hooks/useNow";
+import useRestDays from "./hooks/useRestDays";
 import useWeek from "./hooks/useWeek";
 import { buildCsv, downloadCsv } from "./lib/csv";
 import {
@@ -58,6 +59,7 @@ const Planner = () => {
   const weekKey = toKey(monday);
   const week = useWeek(weekKey, user.id);
   const goals = useGoals(user.id);
+  const restDays = useRestDays(user.id);
 
   const todayKey = toKey(now);
   // diary entries are drawn on the calendars too (a marker per day that has one)
@@ -78,18 +80,20 @@ const Planner = () => {
     setMonday((m) => (toKey(m) === previous ? parseKey(thisMonday) : m));
   }, [thisMonday]);
 
-  // Progress counts only rows that have a habit written on them.
+  // Progress counts only rows that have a habit written on them, and skips rest days.
   const stats = useMemo(() => {
     const real = week.tasks.filter((t) => t.text.trim());
-    const total = real.length * 7;
-    const checked = real.reduce((n, t) => n + t.days.filter(Boolean).length, 0);
+    const active = dates.map((d) => !restDays.isRest(toKey(d)));
+    const total = real.length * active.filter(Boolean).length;
+    const checked = real.reduce((n, t) => n + t.days.filter((v, i) => v && active[i]).length, 0);
     return {
       habits: real.length,
       checked,
       total,
       percent: total ? Math.round((checked / total) * 100) : 0,
     };
-  }, [week.tasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [week.tasks, dates, restDays.rest]);
 
   const goToMonth = (offset) => setMonthStart((m) => new Date(m.getFullYear(), m.getMonth() + offset, 1));
   const showView = async (next) => {
@@ -229,7 +233,7 @@ const Planner = () => {
                   </button>
                 </div>
               </div>
-              <MonthView key={toKey(monthStart)} monthStart={monthStart} userId={user.id} todayKey={todayKey} />
+              <MonthView key={toKey(monthStart)} monthStart={monthStart} userId={user.id} todayKey={todayKey} restDays={restDays} />
             </div>
           ) : (
             <>
@@ -324,6 +328,7 @@ const Planner = () => {
                 onOpenDiary={openDiary}
                 goalLanes={goalLanes}
                 todayKey={todayKey}
+                restDays={restDays}
                 onOpenGoal={(goal) => setGoalModal({ goal })}
               />
               <GoalsPanel

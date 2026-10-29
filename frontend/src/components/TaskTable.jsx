@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DAY_NAMES, DAY_SHORT, toKey } from "../lib/dates";
 import { STATUS, formatRangeText, goalStatus, percentLabel, progressPercent, progressText } from "../lib/goals";
 import DayBox from "./DayBox";
-import { BookIcon, PlusIcon, TrashIcon, UndoIcon } from "./Icons";
+import { BookIcon, MoonIcon, PlusIcon, TrashIcon, UndoIcon } from "./Icons";
 
 const MIN_VISIBLE = 7; // rows shown on screen at minimum; print always shows them all
 
@@ -29,7 +29,10 @@ const TaskTable = ({
   onOpenGoal,
   diaryDays = new Map(),
   onOpenDiary,
+  restDays = { isRest: () => false, toggle: () => {} },
 }) => {
+  const restFlags = dates.map((d) => restDays.isRest(toKey(d)));
+  const activeDays = restFlags.filter((r) => !r).length;
   // empty rows revealed on top of the default, by Enter or "Add habit"
   const [extra, setExtra] = useState(0);
 
@@ -82,7 +85,7 @@ const TaskTable = ({
                     aria-label={`${DAY_NAMES[i]} ${dates[i].getDate()}${i === todayIndex ? ", today" : ""}`}
                     className={`w-14 min-w-14 px-0 py-2.5 text-center ${
                       i === todayIndex ? "bg-accent-soft text-ink" : ""
-                    }`}
+                    } ${restFlags[i] ? "rest-day" : ""}`}
                   >
                     <span
                       aria-hidden="true"
@@ -98,6 +101,18 @@ const TaskTable = ({
                     >
                       {dates[i].getDate()}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => restDays.toggle(toKey(dates[i]))}
+                      aria-pressed={restFlags[i]}
+                      aria-label={`${restFlags[i] ? "Unmark" : "Mark"} ${DAY_NAMES[i]} as a rest day`}
+                      title={restFlags[i] ? "Rest day (click to undo)" : "Mark as a rest day"}
+                      className={`no-print mx-auto mt-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-colors ${
+                        restFlags[i] ? "bg-surface text-ink shadow-sm" : "text-muted/60 hover:bg-surface hover:text-ink"
+                      }`}
+                    >
+                      <MoonIcon width={13} height={13} />
+                    </button>
                   </th>
                 ))}
                 <th scope="col" className="w-16 px-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em]">
@@ -199,8 +214,8 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
             )}
             <tbody>
               {week.map((task, index) => {
-                const done = task.days.filter(Boolean).length;
-                const finished = task.text.trim() !== "" && done === 7;
+                const done = task.days.filter((v, i) => v && !restFlags[i]).length;
+                const finished = task.text.trim() !== "" && activeDays > 0 && done === activeDays;
                 const name = task.text.trim() || `row ${index + 1}`;
                 return (
                   <tr
@@ -237,11 +252,11 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                     {task.days.map((checked, day) => (
                       <td
                         key={day}
-                        className={`p-0 text-center ${day === todayIndex ? "bg-accent-soft/50" : ""}`}
+                        className={`p-0 text-center ${day === todayIndex ? "bg-accent-soft/50" : ""} ${restFlags[day] ? "rest-day" : ""}`}
                       >
                         <DayBox
-                          checked={checked}
-                          disabled={!ready}
+                          checked={checked && !restFlags[day]}
+                          disabled={!ready || restFlags[day]}
                           onChange={() => onToggle(task.id, day)}
                           label={`${DAY_NAMES[day]}: ${name}`}
                         />
@@ -249,10 +264,10 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                     ))}
                     <td className="p-0 text-center text-xs tabular-nums">
                       <span
-                        className={done === 7 && task.text.trim() ? "font-semibold text-accent" : "text-muted"}
-                        aria-label={`${done} of 7 days`}
+                        className={finished ? "font-semibold text-accent" : "text-muted"}
+                        aria-label={`${done} of ${activeDays} days`}
                       >
-                        {task.text.trim() || done ? `${done}/7` : ""}
+                        {task.text.trim() || done ? `${done}/${activeDays}` : ""}
                       </span>
                     </td>
                     <td className="no-print p-0">
