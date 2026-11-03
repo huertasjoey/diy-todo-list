@@ -5,7 +5,7 @@ import useCellMenu from "../hooks/useCellMenu";
 import useMonth from "../hooks/useMonth";
 import CellMenu from "./CellMenu";
 import ConfirmDialog from "./ConfirmDialog";
-import { CheckIcon, MoonIcon, TrashIcon } from "./Icons";
+import { CheckIcon, MoonIcon, TrashIcon, UndoIcon } from "./Icons";
 
 const monthFmt = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 const dayIdx = (d) => (d.getDay() + 6) % 7;
@@ -85,7 +85,7 @@ const Box = ({ on, off = false, disabled, label, onChange, onMenu }) => {
 
 /** The month at a glance: a daily progress chart, then every habit against every day. */
 const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
-  const { days, habits, removed, removeHabit, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
+  const { days, habits, removed, removeHabit, restoreHabit, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
   const ready = status === "ready";
   const isRest = (d) => restDays.isRest(toKey(d));
   const [menu, setMenu] = useState(null); // the rest-day menu for one habit on one day
@@ -310,6 +310,16 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                               <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
                                 Removed
                               </span>
+                              <button
+                                type="button"
+                                onClick={() => restoreHabit(h)}
+                                disabled={!ready}
+                                aria-label={`Restore ${h}`}
+                                title="Restore habit"
+                                className="flex min-h-9 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
+                              >
+                                <UndoIcon width={14} height={14} /> Restore
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => setConfirmRemove(h)}

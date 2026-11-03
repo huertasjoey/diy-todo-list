@@ -169,5 +169,38 @@ export default function useMonth(monthStart, userId) {
     toast.success("Habit deleted");
   };
 
-  return { days, habits, removed, removeHabit, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
+  // Lists a removed habit again by adding it back to the current week (or, for a month that has
+  // ended, its last week). Marks ticked in earlier weeks were never deleted, so they show again.
+  const restoreHabit = (text) => {
+    if (status !== "ready") return;
+    const thisMonday = toKey(mondayOf(new Date()));
+    const cur = weeksRef.current;
+    const keys = [...cur.keys()].sort();
+    const wk = cur.has(thisMonday) ? thisMonday : (keys.filter((k) => k <= thisMonday).at(-1) ?? keys.at(-1));
+    const week = cur.get(wk);
+    if (week.tasks.some((t) => t.text.trim() === text)) return;
+    const last = week.tasks.reduce((m, t) => Math.max(m, t.position), 0);
+    const task = { id: uuid(), position: last + STEP, text, days: Array(7).fill(false) };
+    const next = new Map(cur).set(wk, { ...week, tasks: [...week.tasks, task] });
+    weeksRef.current = next;
+    setWeeks(next);
+    chain.current = chain.current.then(async () => {
+      try {
+        const id = await saveWeekJob({
+          userId,
+          weekStart: wk,
+          weekId: weeksRef.current.get(wk)?.weekId,
+          job: { tasks: new Map([[task.id, { position: task.position, text: task.text, days: task.days }]]) },
+        });
+        const w = weeksRef.current.get(wk);
+        if (w && !w.weekId) w.weekId = id;
+        toast.success("Habit restored");
+      } catch (e) {
+        toast.error(`Couldn't restore: ${e.message}`);
+        setReloads((n) => n + 1);
+      }
+    });
+  };
+
+  return { days, habits, removed, removeHabit, restoreHabit, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
 }

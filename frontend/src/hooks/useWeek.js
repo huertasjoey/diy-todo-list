@@ -234,14 +234,32 @@ export default function useWeek(weekKey, userId) {
 
   const clearMarks = (id) => updateTask(id, (t) => ({ ...t, days: Array(7).fill(false) }));
 
+  // Returns what was deleted ({ weekKey, task }) so it can be restored, or null.
   const deleteTask = (id) => {
-    if (!readyRef.current) return;
-    markCleared(userId, keyRef.current);
+    if (!readyRef.current) return null;
     const w = weekRef.current;
+    const task = w.tasks.find((t) => t.id === id);
+    if (!task) return null;
+    markCleared(userId, keyRef.current);
     commit(
       { ...w, tasks: padRows(w.tasks.filter((t) => t.id !== id)) },
       { tasks: new Map([[id, null]]) },
     );
+    return isUsed(task) ? { weekKey: keyRef.current, task } : null;
+  };
+
+  // Puts a deleted habit back, marks and all, in the week it came from (even if another week is open now).
+  const restoreTask = ({ weekKey: key, task }) => {
+    const job = { tasks: new Map([[task.id, snapshot(task)]]) };
+    if (key !== keyRef.current || !readyRef.current) return schedule(key, job);
+    const w = weekRef.current;
+    const rest = w.tasks.filter((t) => t.id !== task.id);
+    const at = rest.findIndex((t) => t.position > task.position);
+    const tasks = at === -1 ? [...rest, task] : [...rest.slice(0, at), task, ...rest.slice(at)];
+    // a blank padding row makes room for it, so the table doesn't grow
+    const blank = tasks.findLastIndex((t) => !isUsed(t));
+    if (tasks.length > MIN_ROWS && blank !== -1) tasks.splice(blank, 1);
+    commit({ ...w, tasks }, job);
   };
 
   // Inserts an empty row after `afterId` (or at the end) and returns its id.
@@ -286,6 +304,7 @@ export default function useWeek(weekKey, userId) {
     toggleDay,
     clearMarks,
     deleteTask,
+    restoreTask,
     addTask,
     setNotes,
     resetCompletions,

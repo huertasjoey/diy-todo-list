@@ -157,6 +157,32 @@ const Planner = () => {
     }
   };
 
+  // A deleted habit can be brought back, marks and all, from the toast.
+  const deleteHabit = (id) => {
+    const deleted = week.deleteTask(id);
+    if (!deleted) return;
+    const name = deleted.task.text.trim() || "Habit";
+    toast(
+      (t) => (
+        <span className="flex items-center gap-3">
+          <span className="min-w-0 truncate">“{name}” deleted</span>
+          <button
+            type="button"
+            onClick={() => {
+              toast.dismiss(t.id);
+              week.restoreTask(deleted);
+              toast.success("Habit restored");
+            }}
+            className="shrink-0 cursor-pointer rounded-full bg-accent px-3 py-1 text-sm font-semibold text-accent-ink hover:opacity-90"
+          >
+            Restore
+          </button>
+        </span>
+      ),
+      { duration: 8000 },
+    );
+  };
+
   // Save anything still waiting before the session ends, otherwise those edits would be rejected.
   const handleSignOut = async () => {
     await week.flush();
@@ -341,7 +367,7 @@ const Planner = () => {
                 onText={week.setText}
                 onToggle={week.toggleDay}
                 onClear={week.clearMarks}
-                onDelete={week.deleteTask}
+                onDelete={deleteHabit}
                 onAdd={week.addTask}
                 diaryDays={diary.byDate}
                 onOpenDiary={openDiary}
