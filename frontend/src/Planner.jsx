@@ -158,6 +158,11 @@ const Planner = () => {
   };
 
   // A deleted habit can be brought back, marks and all, from the toast.
+  // (the toast outlives this render, so it reads the week as it is when Restore is clicked)
+  const weekKeyRef = useRef(weekKey);
+  const tasksRef = useRef(week.tasks);
+  weekKeyRef.current = weekKey;
+  tasksRef.current = week.tasks;
   const deleteHabit = (id) => {
     const deleted = week.deleteTask(id);
     if (!deleted) return;
@@ -170,6 +175,9 @@ const Planner = () => {
             type="button"
             onClick={() => {
               toast.dismiss(t.id);
+              const same = (x) => x.text.trim().toLowerCase() === name.toLowerCase();
+              if (deleted.weekKey === weekKeyRef.current && tasksRef.current.some(same))
+                return toast.error(`“${name}” is already listed, so it wasn't restored.`);
               week.restoreTask(deleted);
               toast.success("Habit restored");
             }}

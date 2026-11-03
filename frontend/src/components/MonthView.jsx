@@ -84,6 +84,16 @@ const Box = ({ on, off = false, disabled, label, onChange, onMenu }) => {
   );
 };
 
+// A habit's name cell. Right-click, the menu key, or a long press opens its menu (delete, restore).
+const HabitCell = ({ onMenu, children, ...props }) => {
+  const menu = useCellMenu(onMenu);
+  return (
+    <th {...props} {...menu}>
+      {children}
+    </th>
+  );
+};
+
 /** The month at a glance: a daily progress chart, then every habit against every day. */
 const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
   const { days, habits, removed, removeHabit, deleteHabit, undoDelete, restoreHabit, status, isChecked, toggle, retry } =
@@ -114,7 +124,8 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
   };
   const ready = status === "ready";
   const isRest = (d) => restDays.isRest(toKey(d));
-  const [menu, setMenu] = useState(null); // the rest-day menu for one habit on one day
+  // a menu at the pointer: for one habit on one day (rest day, has `date`), or for a habit's name (delete)
+  const [menu, setMenu] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(null); // the removed habit waiting to be deleted for good
 
   // for each day: how many habits were done, and the share of all habits
@@ -324,25 +335,14 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                   const done = days.filter((d) => (gone || !restDays.isOff(toKey(d), h)) && isChecked(h, d)).length;
                   return (
                     <tr key={h} className={`group border-t border-line transition-colors hover:bg-surface-2/50 `}>
-                      <th
+                      <HabitCell
                         scope="row"
                         className="sticky left-0 z-[1] max-w-[11rem] truncate bg-surface px-4 py-0 text-left text-sm font-normal group-hover:bg-surface-2 sm:max-w-xs"
-                        title={h}
+                        title={`${h}\nRight-click (or press and hold) for options`}
+                        onMenu={(x, y) => ready && setMenu({ x, y, habit: h, gone })}
                       >
                         <div className="flex items-center gap-2">
                           <span className={`min-w-0 truncate ${gone ? "text-muted line-through decoration-muted/60" : ""}`}>{h}</span>
-                          {!gone && (
-                            <button
-                              type="button"
-                              onClick={() => deleteWithUndo(h)}
-                              disabled={!ready}
-                              aria-label={`Delete ${h}`}
-                              title="Delete habit"
-                              className="ml-auto flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted opacity-100 transition-colors hover:bg-danger/10 hover:text-danger focus-visible:opacity-100 disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100"
-                            >
-                              <TrashIcon width={15} height={15} />
-                            </button>
-                          )}
                           {gone && (
                             <>
                               <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
@@ -371,7 +371,7 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                             </>
                           )}
                         </div>
-                      </th>
+                      </HabitCell>
                       {days.map((d) => {
                         const off = !gone && restDays.isOff(toKey(d), h);
                         const on = isChecked(h, d) && !off;
@@ -440,7 +440,23 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
         </span>
       </p>
       <p className="mt-2 text-xs text-muted">Add, rename or remove habits in the Week view. Marks you tick here show up there too. Striped days are rest days and are skipped in every total. Right-click a box (or long-press on a phone) to set a rest day for just that habit. A habit marked Removed was taken out of the Week view; its earlier marks are kept.</p>
-      {menu && (
+      {menu && menu.date === undefined && (
+        <CellMenu
+          x={menu.x}
+          y={menu.y}
+          title={menu.habit}
+          items={
+            menu.gone
+              ? [
+                  { label: "Restore habit", icon: UndoIcon, onSelect: () => restoreHabit(menu.habit) },
+                  { label: "Delete for good", icon: TrashIcon, danger: true, onSelect: () => setConfirmRemove(menu.habit) },
+                ]
+              : [{ label: "Delete habit", icon: TrashIcon, danger: true, onSelect: () => deleteWithUndo(menu.habit) }]
+          }
+          onClose={() => setMenu(null)}
+        />
+      )}
+      {menu?.date !== undefined && (
         <CellMenu
           x={menu.x}
           y={menu.y}

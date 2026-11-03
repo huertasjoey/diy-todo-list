@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { DAY_NAMES, DAY_SHORT, toKey } from "../lib/dates";
 import { STATUS, formatRangeText, goalStatus, percentLabel, progressPercent, progressText } from "../lib/goals";
 import CellMenu from "./CellMenu";
@@ -44,6 +45,24 @@ const TaskTable = ({
   );
   const visible = Math.min(week.length, Math.max(MIN_VISIBLE, lastUsed + 1) + extra);
   const firstBlank = week.findIndex((t) => !t.text.trim() && !t.days.some(Boolean));
+
+  // A habit written a second time (ignoring case and spaces) is flagged, and named in a toast
+  // once the row is left, so the same habit isn't tracked twice.
+  const seen = new Map(); // habit -> the first row's index
+  const duplicateOf = new Map(); // task id -> row number it repeats
+  week.forEach((t, i) => {
+    const key = t.text.trim().toLowerCase();
+    if (!key) return;
+    if (seen.has(key)) duplicateOf.set(t.id, seen.get(key) + 1);
+    else seen.set(key, i);
+  });
+  const warnDuplicate = (task) => {
+    const row = duplicateOf.get(task.id);
+    if (row)
+      toast.error(`“${task.text.trim()}” is already listed (row ${row}). Remove one so it isn't tracked twice.`, {
+        id: `duplicate-${task.id}`,
+      });
+  };
 
   const shownLanes = goalLanes.slice(0, MAX_LANES);
   const hiddenGoals = goalLanes.slice(MAX_LANES).reduce((n, lane) => n + lane.length, 0);
@@ -239,6 +258,7 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                       scope="row"
                       className="sticky left-0 z-[1] bg-surface p-0 text-left font-normal group-hover:bg-surface-2"
                     >
+                      <div className="relative">
                       <input
                         id={`task-${task.id}`}
                         type="text"
@@ -249,16 +269,29 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                         aria-label={`Task ${index + 1}`}
                         placeholder={index === firstBlank ? "Add a habit…" : ""}
                         onChange={(e) => onText(task.id, e.target.value)}
+                        onBlur={() => warnDuplicate(task)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
+                            warnDuplicate(task);
                             handleEnter(index, task.id);
                           }
                         }}
+                        aria-invalid={duplicateOf.has(task.id) || undefined}
+                        aria-describedby={duplicateOf.has(task.id) ? `dup-${task.id}` : undefined}
                         className={`h-14 w-full min-w-44 bg-transparent px-5 text-[15px] outline-none transition-colors placeholder:text-muted/70 focus:bg-accent-soft/60 focus-visible:outline-none print:placeholder:text-transparent ${
                           finished ? "text-muted line-through decoration-muted/50" : "text-ink"
-                        }`}
+                        } ${duplicateOf.has(task.id) ? "pr-32 shadow-[inset_3px_0_0_var(--color-danger)]" : ""}`}
                       />
+                      {duplicateOf.has(task.id) && (
+                        <span
+                          id={`dup-${task.id}`}
+                          className="no-print pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-danger"
+                        >
+                          Already listed
+                        </span>
+                      )}
+                      </div>
                     </th>
                     {task.days.map((checked, day) => (
                       <td
