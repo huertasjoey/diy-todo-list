@@ -8,21 +8,131 @@ const check = ({ error }) => {
   if (error) throw new Error(error.message);
 };
 
-// The habit names (never the check marks) from the latest earlier week that had any.
-export const carriedHabits = async (weekStart) => {
+// ---------------------------------------------------------------- habit months
+
+// A habit lasts one month: the month its week's Monday falls in ("2026-11-03" -> "2026-11-01").
+export const monthOfWeek = (weekKey) => `${weekKey.slice(0, 8)}01`;
+
+const nextMonthKey = (monthKey) => {
+  const [y, m] = monthKey.split("-").map(Number);
+  return `${m === 12 ? y + 1 : y}-${String((m % 12) + 1).padStart(2, "0")}-01`;
+};
+
+// Before the habit_renewals migration is applied the table doesn't exist. Habits then keep
+// carrying over as they used to, rather than the whole planner failing to load.
+const missingTable = (error) => error.code === "PGRST205" || error.code === "42P01";
+
+/** This month's answers as Map<habit text, continued>, or null when renewals aren't set up. */
+export const listRenewals = async (monthKey) => {
+  const { data, error } = await supabase
+    .from("habit_renewals")
+    .select("text, continued")
+    .eq("month_start", monthKey);
+  if (error) {
+    if (missingTable(error)) return null;
+    throw new Error(error.message);
+  }
+  return new Map(data.map((r) => [r.text, r.continued]));
+};
+
+// The latest earlier week that had habits written on it.
+const latestHabitWeek = async (before) => {
   const { data, error } = await supabase
     .from("weeks")
     .select("week_start, week_tasks(position, text)")
-    .lt("week_start", weekStart)
+    .lt("week_start", before)
     .order("week_start", { ascending: false })
     .limit(8);
   if (error) throw new Error(error.message);
-  const prev = data.find((w) => w.week_tasks.some((t) => t.text.trim()));
+  return data.find((w) => w.week_tasks.some((t) => t.text.trim())) ?? null;
+};
+
+const habitNames = (week) => [
+  ...new Set(
+    week.week_tasks
+      .filter((t) => t.text.trim())
+      .sort((a, b) => a.position - b.position)
+      .map((t) => t.text.trim()),
+  ),
+];
+
+/**
+ * The habit names (never the check marks) from the latest earlier week that had any.
+ * Within a month they all carry over; into a new month only the ones continued for it.
+ */
+export const carriedHabits = async (weekStart) => {
+  const prev = await latestHabitWeek(weekStart);
   if (!prev) return [];
+  let keep = () => true;
+  const month = monthOfWeek(weekStart);
+  if (monthOfWeek(prev.week_start) !== month) {
+    const renewals = await listRenewals(month);
+    if (renewals) keep = (t) => renewals.get(t.text.trim()) === true;
+  }
   return prev.week_tasks
-    .filter((t) => t.text.trim())
+    .filter((t) => t.text.trim() && keep(t))
     .sort((a, b) => a.position - b.position)
     .map((t) => ({ id: uuid(), position: t.position, text: t.text, days: Array(7).fill(false) }));
+};
+
+/**
+ * Last month's habits still waiting for an answer in the month of `weekStart`. A habit that was
+ * written into this month's weeks again by hand counts as continued and isn't asked about.
+ */
+export const endedHabits = async (weekStart) => {
+  const month = monthOfWeek(weekStart);
+  const renewals = await listRenewals(month);
+  if (!renewals) return [];
+  const prev = await latestHabitWeek(month);
+  if (!prev) return [];
+
+  const { data, error } = await supabase
+    .from("weeks")
+    .select("week_tasks(text)")
+    .gte("week_start", month)
+    .lt("week_start", nextMonthKey(month));
+  if (error) throw new Error(error.message);
+  const present = new Set(data.flatMap((w) => w.week_tasks.map((t) => t.text.trim())));
+
+  return habitNames(prev).filter((h) => !renewals.has(h) && !present.has(h));
+};
+
+/**
+ * Stores the answer for one habit in the month of `weekStart`. Continuing it also adds it to
+ * that week and to any later week of the month already saved without it.
+ */
+export const renewHabit = async ({ userId, weekStart, text, continued }) => {
+  const month = monthOfWeek(weekStart);
+  check(
+    await supabase
+      .from("habit_renewals")
+      .upsert(
+        { user_id: userId, month_start: month, text, continued },
+        { onConflict: "user_id,month_start,text" },
+      ),
+  );
+  if (!continued) return;
+
+  const { data, error } = await supabase
+    .from("weeks")
+    .select("id, week_start, week_tasks(position, text)")
+    .gte("week_start", weekStart)
+    .lt("week_start", nextMonthKey(month));
+  if (error) throw new Error(error.message);
+  const weeks = data.some((w) => w.week_start === weekStart)
+    ? data
+    : [{ id: null, week_start: weekStart, week_tasks: [] }, ...data];
+
+  for (const w of weeks) {
+    if (w.week_tasks.some((t) => t.text.trim() === text)) continue;
+    const last = w.week_tasks.reduce((m, t) => Math.max(m, t.position), 0);
+    await saveWeekJob({
+      userId,
+      weekStart: w.week_start,
+      weekId: w.id,
+      job: { tasks: new Map([[uuid(), { position: last + 1000, text, days: Array(7).fill(false) }]]) },
+    });
+  }
 };
 
 /**

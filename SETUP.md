@@ -14,9 +14,10 @@ and `backend/` is only a tiny server that hosts the built site.
    2. `supabase/migrations/20261016000000_goals.sql` (goals; needs the first one already applied)
    3. `supabase/migrations/20261017000000_diary.sql` (daily diary; needs the first one already applied)
    4. `supabase/migrations/20261020000000_day_tasks.sql` (the Daily plan: today's tasks and tomorrow's optional list)
+   5. `supabase/migrations/20261103000000_habit_renewals.sql` (habits last a month; the next month asks whether to continue each one)
 
    (With the CLI instead: `supabase link --project-ref <ref>` then `supabase db push`.)
-3. **Check it worked.** *Table Editor* shows `weeks`, `week_tasks`, `goals`, `diary_entries` and `day_tasks`, all marked
+3. **Check it worked.** *Table Editor* shows `weeks`, `week_tasks`, `goals`, `diary_entries`, `day_tasks` and `habit_renewals`, all marked
    "RLS enabled", with 4 policies each (*Authentication → Policies*).
 
 ## 2. Auth settings (Authentication)

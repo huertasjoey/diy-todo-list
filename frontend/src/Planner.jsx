@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./auth/AuthProvider";
 import AppShell from "./components/AppShell";
 import ConfirmDialog from "./components/ConfirmDialog";
 import DayPlan from "./components/DayPlan";
 import GoalModal from "./components/GoalModal";
 import GoalsPanel from "./components/GoalsPanel";
+import HabitRenewals from "./components/HabitRenewals";
 import { ChevronLeftIcon, ChevronRightIcon } from "./components/Icons";
 import MonthView from "./components/MonthView";
 import Notes from "./components/Notes";
@@ -15,6 +16,7 @@ import toast from "react-hot-toast";
 import useDayTasks from "./hooks/useDayTasks";
 import useDiaryStats from "./hooks/useDiaryStats";
 import useGoals from "./hooks/useGoals";
+import useHabitRenewals from "./hooks/useHabitRenewals";
 import useNow from "./hooks/useNow";
 import useRestDays from "./hooks/useRestDays";
 import useWeek from "./hooks/useWeek";
@@ -70,6 +72,20 @@ const Planner = () => {
   const thisMonday = toKey(mondayOf(now));
   const dates = useMemo(() => weekDates(monday), [monday]);
   const todayIndex = weekKey === thisMonday ? dates.findIndex((d) => toKey(d) === todayKey) : -1;
+
+  // Habits last a month; last month's wait here until they're continued or stopped.
+  // A continued habit is written into this month's weeks, so both views reload to show it.
+  const [monthReloads, setMonthReloads] = useState(0);
+  const retryWeekLoad = week.retryLoad;
+  const renewals = useHabitRenewals(
+    user.id,
+    thisMonday,
+    useCallback(() => {
+      retryWeekLoad();
+      setMonthReloads((n) => n + 1);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   // If you're looking at the current week when it rolls over (Monday 00:00), move on with the calendar.
   const lastThisMonday = useRef(thisMonday);
@@ -206,6 +222,8 @@ const Planner = () => {
             ))}
           </div>
 
+          <HabitRenewals renewals={renewals} thisMonday={thisMonday} />
+
           {view === "month" ? (
             <div className="no-print">
               <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -234,7 +252,7 @@ const Planner = () => {
                   </button>
                 </div>
               </div>
-              <MonthView key={toKey(monthStart)} monthStart={monthStart} userId={user.id} todayKey={todayKey} restDays={restDays} />
+              <MonthView key={`${toKey(monthStart)}-${monthReloads}`}monthStart={monthStart} userId={user.id} todayKey={todayKey} restDays={restDays} />
             </div>
           ) : (
             <>
