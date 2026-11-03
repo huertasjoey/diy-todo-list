@@ -156,7 +156,20 @@ export const goalFromForm = (v) => ({
   target: v.target.trim() === "" ? null : round2(Number(v.target)),
   unit: v.unit.trim(),
   completed: Boolean(v.completed),
+  // steps with no text are dropped
+  checklist: (v.checklist ?? [])
+    .map((s) => ({ id: s.id, text: s.text.trim().slice(0, MAX_STEP), done: Boolean(s.done) }))
+    .filter((s) => s.text),
 });
+
+export const MAX_STEP = 200; // characters in one checklist step
+export const MAX_STEPS = 100; // same as the database check
+
+/** "3/12 steps", or "" for a goal with no checklist. */
+export const checklistText = (g) => {
+  const steps = g.checklist ?? [];
+  return steps.length ? `${steps.filter((s) => s.done).length}/${steps.length} steps` : "";
+};
 
 export const formFromGoal = (g) => ({
   title: g.title,
@@ -166,6 +179,7 @@ export const formFromGoal = (g) => ({
   target: g.target == null ? "" : String(g.target),
   unit: g.unit,
   completed: Boolean(g.completed),
+  checklist: (g.checklist ?? []).map((s) => ({ ...s })),
 });
 
 /** Goals whose date range includes this day. */

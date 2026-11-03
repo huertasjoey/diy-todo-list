@@ -15,6 +15,7 @@ and `backend/` is only a tiny server that hosts the built site.
    3. `supabase/migrations/20261017000000_diary.sql` (daily diary; needs the first one already applied)
    4. `supabase/migrations/20261020000000_day_tasks.sql` (the Daily plan: today's tasks and tomorrow's optional list)
    5. `supabase/migrations/20261103000000_habit_renewals.sql` (habits last a month; the next month asks whether to continue each one)
+   6. `supabase/migrations/20261104000000_goal_checklist.sql` (a checklist of steps inside each goal)
 
    (With the CLI instead: `supabase link --project-ref <ref>` then `supabase db push`.)
 3. **Check it worked.** *Table Editor* shows `weeks`, `week_tasks`, `goals`, `diary_entries`, `day_tasks` and `habit_renewals`, all marked
@@ -102,6 +103,22 @@ supabase functions deploy writing-assist
 No new variables are needed in `frontend/.env`: the website reaches the function through the same
 public URL and key it already uses. Check it worked: open a diary entry, tick the agreement box,
 write a few lines, press **Correct my writing**.
+
+### Goal step suggestions (optional)
+
+The **Suggest steps** button in a goal's checklist asks Claude to break the goal into steps (for
+"Become an AI engineer": Python, the math behind ML, machine learning basics, and so on). Only the
+goal's title and its existing steps are sent, and only when the button is pressed. Without this
+function the checklist still works; you just add the steps yourself.
+
+It uses the same `ANTHROPIC_API_KEY` secret as the writing assistant (secrets are shared by every
+function in the project). Optional: `GOAL_STEPS_MODEL` (default `claude-opus-5-5`).
+
+- Dashboard: *Edge Functions* -> *Deploy a new function* -> *Via editor*, name it exactly `goal-steps`,
+  paste `supabase/functions/goal-steps/index.ts`, deploy. Leave "Verify JWT" on.
+- CLI: `supabase functions deploy goal-steps`
+
+Check it worked: open a goal, write a title, press **Suggest steps**.
 
 ## 7. Test checklist
 

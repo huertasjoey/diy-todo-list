@@ -224,7 +224,13 @@ export const saveWeekJob = async ({ userId, weekStart, weekId, job }) => {
 
 // ---------------------------------------------------------------- goals
 
-const GOAL_COLUMNS = "id, title, start_date, end_date, current_value, target_value, unit, completed";
+const BASE_GOAL_COLUMNS = "id, title, start_date, end_date, current_value, target_value, unit, completed";
+// The checklist column comes from the goal_checklist migration. Until it is applied, goals load
+// and save without it (42703 / PGRST204: no such column), so nothing else breaks.
+let hasChecklist = true;
+const goalColumns = () => (hasChecklist ? `${BASE_GOAL_COLUMNS}, checklist` : BASE_GOAL_COLUMNS);
+const noChecklistColumn = (error) =>
+  hasChecklist && (error.code === "42703" || error.code === "PGRST204") && /checklist/.test(error.message);
 
 const toGoal = (r) => ({
   id: r.id,
@@ -235,6 +241,7 @@ const toGoal = (r) => ({
   target: r.target_value === null ? null : Number(r.target_value),
   unit: r.unit,
   completed: r.completed,
+  checklist: Array.isArray(r.checklist) ? r.checklist : [],
 });
 
 // 23505 is Postgres "unique violation": the same title and dates already exist for this account
@@ -251,35 +258,75 @@ const goalError = (error) => {
 export const listGoals = async () => {
   const { data, error } = await supabase
     .from("goals")
-    .select(GOAL_COLUMNS)
+    .select(goalColumns())
     .order("start_date")
     .order("created_at");
-  if (error) throw goalError(error);
+  if (error) {
+    if (noChecklistColumn(error)) {
+      hasChecklist = false;
+      return listGoals();
+    }
+    throw goalError(error);
+  }
   return data.map(toGoal);
 };
 
 /** Insert or update by id, so saving the same goal twice can never create a duplicate. */
 export const saveGoal = async (userId, goal) => {
+  const row = {
+    id: goal.id,
+    user_id: userId,
+    title: goal.title,
+    start_date: goal.startDate,
+    end_date: goal.endDate,
+    current_value: goal.current,
+    target_value: goal.target,
+    unit: goal.unit,
+    completed: goal.completed,
+  };
+  if (hasChecklist) row.checklist = goal.checklist ?? [];
   const { data, error } = await supabase
     .from("goals")
-    .upsert(
-      {
-        id: goal.id,
-        user_id: userId,
-        title: goal.title,
-        start_date: goal.startDate,
-        end_date: goal.endDate,
-        current_value: goal.current,
-        target_value: goal.target,
-        unit: goal.unit,
-        completed: goal.completed,
-      },
-      { onConflict: "id" },
-    )
-    .select(GOAL_COLUMNS)
+    .upsert(row, { onConflict: "id" })
+    .select(goalColumns())
     .single();
-  if (error) throw goalError(error);
+  if (error) {
+    if (noChecklistColumn(error)) {
+      hasChecklist = false;
+      if (!goal.checklist?.length) return saveGoal(userId, goal);
+      throw new Error(
+        "The goal checklist isn't set up in the database yet. Run the goal_checklist migration (see SETUP.md), or remove the checklist steps to save.",
+      );
+    }
+    throw goalError(error);
+  }
   return toGoal(data);
+};
+
+export const checklistAvailable = () => hasChecklist;
+
+/**
+ * Asks the goal-steps Edge Function (AI) for a checklist of steps toward a goal.
+ * Only ever called from a button the person pressed. Returns an array of step texts.
+ */
+export const suggestGoalSteps = async ({ title, existing }) => {
+  const { data, error } = await supabase.functions.invoke("goal-steps", { body: { title, existing } });
+  if (error) {
+    let info = null;
+    try {
+      info = await error.context?.json();
+    } catch {
+      // not a JSON error body (for example a network failure)
+    }
+    const status = error.context?.status;
+    if (status === 404 || (error.name === "FunctionsFetchError" && !info))
+      throw new Error(
+        "Couldn't reach the step suggester. Most often it hasn't been set up on your Supabase project yet (see SETUP.md, “Goal step suggestions”).",
+      );
+    throw new Error(info?.message || "Couldn't get suggestions. Check your connection and try again.");
+  }
+  if (!Array.isArray(data?.steps)) throw new Error("The suggester sent back an empty answer. Please try again.");
+  return data.steps;
 };
 
 export const deleteGoal = async (id) => {

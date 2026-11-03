@@ -11,7 +11,9 @@ import {
   timeLeftText,
   validateGoal,
 } from "../lib/goals";
+import { checklistAvailable } from "../lib/plannerDb";
 import { uuid } from "../lib/uuid";
+import GoalChecklist from "./GoalChecklist";
 import GoalProgress from "./GoalProgress";
 
 const UNIT_SUGGESTIONS = ["pages", "books", "km", "hours", "tasks", "workouts", "days"];
@@ -59,6 +61,7 @@ const todayValues = (todayKey) => ({
   target: "",
   unit: "",
   completed: false,
+  checklist: [],
 });
 
 /**
@@ -237,6 +240,15 @@ const GoalModal = ({ goal, todayKey, onSave, onDelete, onClose }) => {
               ))}
             </datalist>
           </Field>
+
+          {checklistAvailable() && (
+            <GoalChecklist
+              id={id("checklist")}
+              title={values.title}
+              steps={values.checklist}
+              onChange={(steps) => set("checklist", steps)}
+            />
+          )}
 
           <div>
             <label htmlFor={id("completed")} className="flex min-h-11 cursor-pointer items-center gap-3 has-[:disabled]:cursor-default">
