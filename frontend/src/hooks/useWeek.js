@@ -18,7 +18,7 @@ export const wasCleared = (userId, weekKey) => {
     return false;
   }
 };
-const markCleared = (userId, weekKey) => {
+export const markCleared = (userId, weekKey) => {
   try {
     localStorage.setItem(clearedKey(userId, weekKey), "1");
   } catch {

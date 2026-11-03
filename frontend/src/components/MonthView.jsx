@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { LEVELS, levelFor } from "../lib/progress";
 import { DAY_INITIALS, DAY_NAMES, mondayOf, parseKey, toKey } from "../lib/dates";
 import useCellMenu from "../hooks/useCellMenu";
@@ -85,7 +86,32 @@ const Box = ({ on, off = false, disabled, label, onChange, onMenu }) => {
 
 /** The month at a glance: a daily progress chart, then every habit against every day. */
 const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
-  const { days, habits, removed, removeHabit, restoreHabit, status, isChecked, toggle, retry } = useMonth(monthStart, userId);
+  const { days, habits, removed, removeHabit, deleteHabit, undoDelete, restoreHabit, status, isChecked, toggle, retry } =
+    useMonth(monthStart, userId);
+
+  // Same as deleting in the Week view: the toast can bring it back, marks and all.
+  const deleteWithUndo = (h) => {
+    const deleted = deleteHabit(h);
+    if (!deleted) return;
+    toast(
+      (t) => (
+        <span className="flex items-center gap-3">
+          <span className="min-w-0 truncate">“{h}” deleted</span>
+          <button
+            type="button"
+            onClick={() => {
+              toast.dismiss(t.id);
+              undoDelete(deleted);
+            }}
+            className="shrink-0 cursor-pointer rounded-full bg-accent px-3 py-1 text-sm font-semibold text-accent-ink hover:opacity-90"
+          >
+            Restore
+          </button>
+        </span>
+      ),
+      { duration: 8000 },
+    );
+  };
   const ready = status === "ready";
   const isRest = (d) => restDays.isRest(toKey(d));
   const [menu, setMenu] = useState(null); // the rest-day menu for one habit on one day
@@ -305,6 +331,18 @@ const MonthView = ({ monthStart, userId, todayKey, restDays }) => {
                       >
                         <div className="flex items-center gap-2">
                           <span className={`min-w-0 truncate ${gone ? "text-muted line-through decoration-muted/60" : ""}`}>{h}</span>
+                          {!gone && (
+                            <button
+                              type="button"
+                              onClick={() => deleteWithUndo(h)}
+                              disabled={!ready}
+                              aria-label={`Delete ${h}`}
+                              title="Delete habit"
+                              className="ml-auto flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted opacity-100 transition-colors hover:bg-danger/10 hover:text-danger focus-visible:opacity-100 disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100"
+                            >
+                              <TrashIcon width={15} height={15} />
+                            </button>
+                          )}
                           {gone && (
                             <>
                               <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">

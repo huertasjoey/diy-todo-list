@@ -3,10 +3,19 @@ import toast from "react-hot-toast";
 import { addDays, mondayOf, toKey } from "../lib/dates";
 import { carriedHabits, loadWeek, saveWeekJob } from "../lib/plannerDb";
 import { uuid } from "../lib/uuid";
-import { wasCleared } from "./useWeek";
+import { markCleared, wasCleared } from "./useWeek";
 
 const STEP = 1000;
 const dayIndex = (date) => (date.getDay() + 6) % 7; // Monday = 0
+
+// The week whose habits the month lists: the latest one up to today. A week that was opened and
+// saved counts even when it is empty (everything was removed on purpose).
+const listingKey = (weeks) => {
+  const thisMonday = toKey(mondayOf(new Date()));
+  const keys = [...weeks.keys()].sort();
+  const has = (k) => weeks.get(k).tasks.some((t) => t.text.trim());
+  return keys.filter((k) => k <= thisMonday && (weeks.get(k).weekId || has(k))).at(-1) ?? keys.filter(has).at(-1) ?? null;
+};
 
 /**
  * One calendar month of habit check-ins. Marks live in the same weekly records the Week view
@@ -76,13 +85,10 @@ export default function useMonth(monthStart, userId) {
   // Week view removes it here too. Marks already ticked in earlier weeks stay stored, and come
   // back if the same habit is added again. A month that has ended is judged by its own last week.
   const habits = useMemo(() => {
-    const thisMonday = toKey(mondayOf(new Date()));
-    const ordered = [...weeks].sort(([a], [b]) => (a < b ? -1 : 1));
-    const names = (w) => [...new Set(w.tasks.filter((t) => t.text.trim()).sort((a, b) => a.position - b.position).map((t) => t.text.trim()))];
-    // a week that was opened and saved counts even when it is empty (everything was removed on purpose)
-    const counts = ([k, w]) => k <= thisMonday && (w.weekId || w.tasks.some((t) => t.text.trim()));
-    const ref = ordered.filter(counts).at(-1) ?? ordered.filter(([, w]) => w.tasks.some((t) => t.text.trim())).at(-1);
-    return ref ? names(ref[1]) : upcoming;
+    const ref = listingKey(weeks);
+    if (!ref) return upcoming;
+    const w = weeks.get(ref);
+    return [...new Set(w.tasks.filter((t) => t.text.trim()).sort((a, b) => a.position - b.position).map((t) => t.text.trim()))];
   }, [weeks, upcoming]);
 
   // habits that were ticked or listed earlier in the month but have since been removed
@@ -169,14 +175,83 @@ export default function useMonth(monthStart, userId) {
     toast.success("Habit deleted");
   };
 
+  // Where a restored habit goes: the current week, or for a month that has ended, its last week.
+  const listingWeek = () => {
+    const thisMonday = toKey(mondayOf(new Date()));
+    const cur = weeksRef.current;
+    const keys = [...cur.keys()].sort();
+    return cur.has(thisMonday) ? thisMonday : (keys.filter((k) => k <= thisMonday).at(-1) ?? keys.at(-1));
+  };
+
+  // Saves each week's changed rows in order. jobs = [[weekKey, Map<taskId, row | null>]]
+  const saveJobs = (jobs, failText, after) => {
+    chain.current = chain.current.then(async () => {
+      try {
+        for (const [wk, tasks] of jobs) {
+          const id = await saveWeekJob({ userId, weekStart: wk, weekId: weeksRef.current.get(wk)?.weekId, job: { tasks } });
+          const w = weeksRef.current.get(wk);
+          if (w && !w.weekId) w.weekId = id;
+        }
+        after?.();
+      } catch (e) {
+        toast.error(`${failText}: ${e.message}`);
+        setReloads((n) => n + 1);
+      }
+    });
+  };
+
+  // Takes a listed habit off the current week and any later week of the month, so it stops
+  // carrying over. Earlier weeks keep their marks, so it shows as removed. Returns what was
+  // deleted (marks included) for `undoDelete`.
+  const deleteHabit = (text) => {
+    if (status !== "ready") return null;
+    const cur = weeksRef.current;
+    const from = listingKey(cur);
+    if (!from) return null;
+    const next = new Map(cur);
+    const deleted = [];
+    for (const [wk, w] of cur) {
+      if (wk < from) continue;
+      const gone = w.tasks.filter((t) => t.text.trim() === text);
+      if (!gone.length) continue;
+      next.set(wk, { ...w, tasks: w.tasks.filter((t) => t.text.trim() !== text) });
+      deleted.push([wk, gone]);
+      markCleared(userId, wk);
+    }
+    if (!deleted.length) return null;
+    weeksRef.current = next;
+    setWeeks(next);
+    saveJobs(
+      deleted.map(([wk, gone]) => [wk, new Map(gone.map((t) => [t.id, null]))]),
+      "Couldn't delete",
+    );
+    return deleted;
+  };
+
+  const undoDelete = (deleted) => {
+    const next = new Map(weeksRef.current);
+    for (const [wk, gone] of deleted) {
+      const w = next.get(wk);
+      if (w) next.set(wk, { ...w, tasks: [...w.tasks, ...gone].sort((a, b) => a.position - b.position) });
+    }
+    weeksRef.current = next;
+    setWeeks(next);
+    saveJobs(
+      deleted.map(([wk, gone]) => [
+        wk,
+        new Map(gone.map((t) => [t.id, { position: t.position, text: t.text, days: t.days }])),
+      ]),
+      "Couldn't restore",
+      () => toast.success("Habit restored"),
+    );
+  };
+
   // Lists a removed habit again by adding it back to the current week (or, for a month that has
   // ended, its last week). Marks ticked in earlier weeks were never deleted, so they show again.
   const restoreHabit = (text) => {
     if (status !== "ready") return;
-    const thisMonday = toKey(mondayOf(new Date()));
     const cur = weeksRef.current;
-    const keys = [...cur.keys()].sort();
-    const wk = cur.has(thisMonday) ? thisMonday : (keys.filter((k) => k <= thisMonday).at(-1) ?? keys.at(-1));
+    const wk = listingWeek();
     const week = cur.get(wk);
     if (week.tasks.some((t) => t.text.trim() === text)) return;
     const last = week.tasks.reduce((m, t) => Math.max(m, t.position), 0);
@@ -184,23 +259,12 @@ export default function useMonth(monthStart, userId) {
     const next = new Map(cur).set(wk, { ...week, tasks: [...week.tasks, task] });
     weeksRef.current = next;
     setWeeks(next);
-    chain.current = chain.current.then(async () => {
-      try {
-        const id = await saveWeekJob({
-          userId,
-          weekStart: wk,
-          weekId: weeksRef.current.get(wk)?.weekId,
-          job: { tasks: new Map([[task.id, { position: task.position, text: task.text, days: task.days }]]) },
-        });
-        const w = weeksRef.current.get(wk);
-        if (w && !w.weekId) w.weekId = id;
-        toast.success("Habit restored");
-      } catch (e) {
-        toast.error(`Couldn't restore: ${e.message}`);
-        setReloads((n) => n + 1);
-      }
-    });
+    saveJobs(
+      [[wk, new Map([[task.id, { position: task.position, text: task.text, days: task.days }]])]],
+      "Couldn't restore",
+      () => toast.success("Habit restored"),
+    );
   };
 
-  return { days, habits, removed, removeHabit, restoreHabit, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
+  return { days, habits, removed, removeHabit, deleteHabit, undoDelete, restoreHabit, status, isChecked, toggle, retry: () => setReloads((n) => n + 1) };
 }
