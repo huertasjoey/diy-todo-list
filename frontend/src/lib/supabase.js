@@ -28,10 +28,62 @@ const findProblem = () => {
 export const configProblem = findProblem();
 export const isConfigured = configProblem === null;
 
+// "Remember me" on the sign-in form. Remembered sessions live in localStorage and survive
+// closing the browser; the rest live in sessionStorage and end with the tab.
+const REMEMBER_KEY = "kaizen.remember";
+
+export const getRemember = () => {
+  try {
+    return localStorage.getItem(REMEMBER_KEY) !== "0";
+  } catch {
+    return true;
+  }
+};
+
+export const setRemember = (remember) => {
+  try {
+    localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+  } catch {
+    // storage blocked: the session simply won't be kept
+  }
+};
+
+const sessionStore = {
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      const [keep, drop] = getRemember() ? [localStorage, sessionStorage] : [sessionStorage, localStorage];
+      drop.removeItem(key);
+      keep.setItem(key, value);
+    } catch {
+      // storage blocked
+    }
+  },
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    } catch {
+      // storage blocked
+    }
+  },
+};
+
 // Only the public anon key is used here. What each user can reach is decided
 // by the Row Level Security policies in supabase/migrations, not by this key.
 export const supabase = isConfigured
   ? createClient(url, anonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: sessionStore,
+      },
     })
   : null;

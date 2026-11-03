@@ -2,10 +2,29 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { PageSpinner } from "../auth/Guards";
-import { CheckIcon } from "../components/Icons";
+import { CheckIcon, EyeIcon, EyeOffIcon } from "../components/Icons";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getRemember, setRemember } from "../lib/supabase";
 
 const MIN_PASSWORD = 8;
+const REMEMBERED_EMAIL_KEY = "kaizen.email";
+
+const readRememberedEmail = () => {
+  try {
+    return (getRemember() && localStorage.getItem(REMEMBERED_EMAIL_KEY)) || "";
+  } catch {
+    return "";
+  }
+};
+
+const writeRememberedEmail = (email) => {
+  try {
+    if (email) localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+    else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+  } catch {
+    // storage blocked
+  }
+};
 
 const inputCls =
   "w-full rounded-xl border border-line bg-surface px-4 py-3 text-[15px] text-ink outline-none transition-colors placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15";
@@ -86,6 +105,31 @@ const Field = ({ label, id, ...props }) => (
   </div>
 );
 
+// A password input with a button that shows or hides what was typed.
+const PasswordField = ({ label, id, ...props }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div>
+      <label htmlFor={id} className={labelCls}>
+        {label}
+      </label>
+      <div className="relative">
+        <input id={id} className={`${inputCls} pr-12`} {...props} type={visible ? "text" : "password"} />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+          aria-controls={id}
+          className="absolute inset-y-0 right-0 flex w-12 cursor-pointer items-center justify-center rounded-r-xl text-muted transition-colors hover:text-ink focus-visible:text-accent focus-visible:outline-none"
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const Alert = ({ children }) =>
   children ? (
     <p role="alert" className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -111,7 +155,8 @@ export const Login = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState(() => ({ email: readRememberedEmail(), password: "" }));
+  const [remember, setRememberChecked] = useState(getRemember);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -119,9 +164,13 @@ export const Login = () => {
     e.preventDefault();
     setError("");
     setBusy(true);
-    const { error } = await signIn(form.email.trim(), form.password);
+    // set before signing in so the new session is saved in the right place
+    setRemember(remember);
+    const email = form.email.trim();
+    const { error } = await signIn(email, form.password);
     setBusy(false);
     if (error) return setError(friendly(error.message));
+    writeRememberedEmail(remember ? email : "");
     navigate(location.state?.from || "/", { replace: true });
   };
 
@@ -143,22 +192,32 @@ export const Login = () => {
         <Field
           label="Email"
           id="email"
+          name="email"
           type="email"
-          autoComplete="email"
+          autoComplete="username"
           required
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
-        <Field
+        <PasswordField
           label="Password"
           id="password"
-          type="password"
+          name="password"
           autoComplete="current-password"
           required
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
         />
-        <div className="text-right text-sm">
+        <div className="flex items-center justify-between gap-4 text-sm">
+          <label className="flex cursor-pointer items-center gap-2 text-ink">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRememberChecked(e.target.checked)}
+              className="h-4 w-4 cursor-pointer accent-[var(--color-accent)]"
+            />
+            Remember me
+          </label>
           <Link to="/forgot-password" className={linkCls}>
             Forgot password?
           </Link>
