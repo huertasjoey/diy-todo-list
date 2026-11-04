@@ -4,16 +4,22 @@ export const MAX_TITLE = 200; // same as the database check
 export const MAX_UNIT = 30;
 export const MAX_VALUE = 1_000_000_000;
 
-/** A target is optional. Without one there is no progress to measure. */
+/** A target is optional. Without one (and without a checklist) there is no progress to measure. */
 export const hasTarget = (g) => g.target != null && g.target > 0;
+
+/** A goal with checklist steps measures its progress by them, instead of Current / Target. */
+export const usesChecklist = (g) => (g.checklist?.length ?? 0) > 0;
+const stepsDone = (g) => g.checklist.filter((s) => s.done).length;
 
 /**
  * 0-100, never negative, capped at 100 even when the current value passes the target.
- * null when the goal has no target.
+ * From the checklist when the goal has one. null when there is nothing to measure.
  */
 export const progressPercent = (g) => {
-  if (!hasTarget(g)) return null;
-  const pct = (Math.max(0, g.current) / g.target) * 100;
+  let pct;
+  if (usesChecklist(g)) pct = (stepsDone(g) / g.checklist.length) * 100;
+  else if (hasTarget(g)) pct = (Math.max(0, g.current) / g.target) * 100;
+  else return null;
   // floor, so 100% only ever means "reached", never "99.6% rounded up"
   return Math.min(100, Math.floor(pct));
 };
@@ -24,8 +30,12 @@ export const percentLabel = (g) => {
   return pct === null ? "no target set" : `${pct}% complete`;
 };
 
-/** Reached the target, or marked done by hand (the only way to finish a goal with no target). */
-export const isCompleted = (g) => Boolean(g.completed) || (hasTarget(g) && g.current >= g.target);
+/** Every step ticked, or (with no checklist) the target reached. Either completes the goal by itself. */
+export const reachedGoal = (g) =>
+  usesChecklist(g) ? stepsDone(g) === g.checklist.length : hasTarget(g) && g.current >= g.target;
+
+/** Reached, or marked done by hand (the only way to finish a goal with no target or checklist). */
+export const isCompleted = (g) => Boolean(g.completed) || reachedGoal(g);
 
 /**
  * completed: current reached the target
@@ -97,6 +107,7 @@ const numberFmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 })
 export const formatValue = (n) => numberFmt.format(n);
 
 export const progressText = (g) => {
+  if (usesChecklist(g)) return `${stepsDone(g)} / ${g.checklist.length} steps done`;
   const unit = g.unit ? ` ${g.unit}` : "";
   if (hasTarget(g)) return `${formatValue(g.current)} / ${formatValue(g.target)}${unit}`;
   return g.current > 0 ? `${formatValue(g.current)}${unit} so far` : "No target set";
@@ -164,12 +175,6 @@ export const goalFromForm = (v) => ({
 
 export const MAX_STEP = 200; // characters in one checklist step
 export const MAX_STEPS = 100; // same as the database check
-
-/** "3/12 steps", or "" for a goal with no checklist. */
-export const checklistText = (g) => {
-  const steps = g.checklist ?? [];
-  return steps.length ? `${steps.filter((s) => s.done).length}/${steps.length} steps` : "";
-};
 
 export const formFromGoal = (g) => ({
   title: g.title,

@@ -1,4 +1,4 @@
-import { STATUS, checklistText, formatRangeText, goalStatus, percentLabel, progressPercent, progressText, sortGoals, timeLeftText } from "../lib/goals";
+import { STATUS, formatRangeText, goalStatus, percentLabel, progressPercent, progressText, sortGoals, timeLeftText } from "../lib/goals";
 import GoalProgress from "./GoalProgress";
 import { CalendarIcon, PlusIcon } from "./Icons";
 
@@ -94,7 +94,6 @@ const GoalsPanel = ({ goals, status, error, todayKey, onAdd, onOpen, onRetry }) 
                   </div>
                   <p className="mt-1 text-xs text-muted">
                     {formatRangeText(g)} · {timeLeftText(g, todayKey)}
-                    {checklistText(g) && <> · {checklistText(g)}</>}
                   </p>
                   <GoalProgress goal={g} status={s} className="mt-3" />
                   <div className={`${progressPercent(g) === null ? "mt-3" : "mt-2"} flex items-baseline justify-between text-sm`}>

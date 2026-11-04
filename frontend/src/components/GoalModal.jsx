@@ -5,9 +5,10 @@ import {
   formFromGoal,
   goalFromForm,
   goalStatus,
-  hasTarget,
   progressPercent,
   progressText,
+  reachedGoal,
+  usesChecklist,
   timeLeftText,
   validateGoal,
 } from "../lib/goals";
@@ -50,6 +51,8 @@ const previewFields = (v) => {
     current: Math.max(0, num(v.current) ?? 0),
     target: target !== null && target > 0 ? target : null,
     completed: Boolean(v.completed),
+    // steps with no text yet don't count
+    checklist: v.checklist.filter((s) => s.text.trim()),
   };
 };
 
@@ -136,8 +139,11 @@ const GoalModal = ({ goal, todayKey, onSave, onDelete, onClose }) => {
   // live preview of the saved goal, so the details view stays in step with what is typed
   const preview = editing ? { ...goal, ...previewFields(values) } : null;
   const status = preview ? goalStatus(preview, todayKey) : null;
-  // reaching the target completes a goal by itself; the box is then locked on
-  const autoCompleted = Boolean(preview) && hasTarget(preview) && preview.current >= preview.target;
+  const measured = Boolean(preview) && progressPercent(preview) !== null;
+  // ticking every step (or reaching the target) completes a goal by itself; the box is then locked on
+  const live = previewFields(values);
+  const byChecklist = usesChecklist(live);
+  const autoCompleted = reachedGoal(live);
 
   return (
     <dialog
@@ -166,9 +172,9 @@ const GoalModal = ({ goal, todayKey, onSave, onDelete, onClose }) => {
               <span className="text-xs text-muted">{timeLeftText(preview, todayKey)}</span>
             </div>
             <GoalProgress goal={preview} status={status} className="mt-3" />
-            <div className={`${hasTarget(preview) ? "mt-2" : "mt-3"} flex items-baseline justify-between text-sm`}>
-              <span className={hasTarget(preview) || preview.current > 0 ? "" : "text-muted"}>{progressText(preview)}</span>
-              {hasTarget(preview) && (
+            <div className={`${measured ? "mt-2" : "mt-3"} flex items-baseline justify-between text-sm`}>
+              <span className={measured || preview.current > 0 ? "" : "text-muted"}>{progressText(preview)}</span>
+              {measured && (
                 <span className="font-semibold tabular-nums">{progressPercent(preview)}%</span>
               )}
             </div>
@@ -213,7 +219,7 @@ const GoalModal = ({ goal, todayKey, onSave, onDelete, onClose }) => {
                 step="any"
               />
             </Field>
-            <Field id={id("target")} label="Target value (optional)" error={errors.target} hint="Leave blank to skip the progress bar.">
+            <Field id={id("target")} label="Target value (optional)" error={errors.target} hint={byChecklist ? "Not used while the checklist has steps: progress comes from them." : "Leave blank to skip the progress bar."}>
               <input
                 {...fieldProps("target", { hint: true })}
                 type="number"
@@ -265,8 +271,12 @@ const GoalModal = ({ goal, todayKey, onSave, onDelete, onClose }) => {
             </label>
             <p id={id("completed-hint")} className="ml-8 text-xs text-muted">
               {autoCompleted
-                ? "Completed automatically: you have reached the target."
-                : "Goals with a target complete themselves. Tick this to finish one early, or one with no target."}
+                ? byChecklist
+                  ? "Completed automatically: every step on the checklist is done."
+                  : "Completed automatically: you have reached the target."
+                : byChecklist
+                  ? "The goal completes itself when every step is ticked. Tick this to finish it early."
+                  : "Goals with a target or a checklist complete themselves. Tick this to finish one early, or one with neither."}
             </p>
           </div>
         </div>
