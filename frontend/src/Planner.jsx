@@ -23,8 +23,10 @@ import useWeek from "./hooks/useWeek";
 import { buildCsv, downloadCsv } from "./lib/csv";
 import {
   addDays,
+  formatLongRange,
   formatRange,
   formatYear,
+  isoWeek,
   mondayOf,
   parseKey,
   toKey,
@@ -33,7 +35,56 @@ import {
 import { weekLanes } from "./lib/goals";
 
 const navBtn =
-  "flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-line text-ink transition-colors hover:bg-surface-2";
+  "flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-surface-2";
+
+/** The big serif title for the week or month, with the Week | Month switch and previous / today / next. */
+const PageHeader = ({ eyebrow, title, status, view, onView, unit, onPrev, onNext, onToday, atToday }) => (
+  <header className="no-print mb-10 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
+    <div className="min-w-0">
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="mt-3 font-display text-5xl leading-[1.02] tracking-tight sm:text-[4.5rem]">{title}</h2>
+      {status !== undefined && (
+        <p className="mt-3 flex min-h-5 items-center gap-2 text-xs text-muted" aria-live="polite">
+          {status}
+        </p>
+      )}
+    </div>
+
+    <div className="flex flex-col items-start gap-3 sm:items-end">
+      <div role="group" aria-label="Planner view" className="inline-flex rounded-full bg-surface-2 p-1">
+        {["week", "month"].map((v) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={view === v}
+            onClick={() => onView(v)}
+            className={`min-h-9 min-w-20 cursor-pointer rounded-full px-4 text-sm font-medium capitalize transition-colors ${
+              view === v ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
+            }`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      <div className="inline-flex items-center rounded-full p-0.5 shadow-[0_0_0_1px_var(--line)]">
+        <button type="button" className={navBtn} onClick={onPrev} aria-label={`Previous ${unit}`}>
+          <ChevronLeftIcon width={18} height={18} />
+        </button>
+        <button
+          type="button"
+          className="min-h-11 cursor-pointer rounded-full px-4 text-sm font-medium transition-colors hover:bg-surface-2 disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent"
+          onClick={onToday}
+          disabled={atToday}
+        >
+          Today
+        </button>
+        <button type="button" className={navBtn} onClick={onNext} aria-label={`Next ${unit}`}>
+          <ChevronRightIcon width={18} height={18} />
+        </button>
+      </div>
+    </div>
+  </header>
+);
 
 const STATUS_TEXT = {
   loading: "Loading…",
@@ -232,121 +283,60 @@ const Planner = () => {
             </div>
           </div>
 
-          {/* Week | Month */}
-          <div
-            role="group"
-            aria-label="Planner view"
-            className="no-print mb-5 inline-flex gap-1 rounded-full border border-line bg-surface-2 p-1"
-          >
-            {[
-              { id: "week", label: "Week" },
-              { id: "month", label: "Month" },
-            ].map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                aria-pressed={view === v.id}
-                onClick={() => showView(v.id)}
-                className={`min-h-10 min-w-20 cursor-pointer rounded-full px-5 text-sm font-medium transition-colors ${
-                  view === v.id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-
+          <div className="mx-auto max-w-[70rem]">
           <HabitRenewals renewals={renewals} thisMonday={thisMonday} />
 
           {view === "month" ? (
             <div className="no-print">
-              <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                    {monthStart.getFullYear()}
-                  </p>
-                  <h2 className="font-display text-5xl leading-tight tracking-tight sm:text-6xl">
-                    {new Intl.DateTimeFormat(undefined, { month: "long" }).format(monthStart)}
-                  </h2>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" className={navBtn} onClick={() => goToMonth(-1)} aria-label="Previous month">
-                    <ChevronLeftIcon />
-                  </button>
-                  <button
-                    type="button"
-                    className="min-h-11 cursor-pointer rounded-full border border-line px-5 text-sm font-medium transition-colors hover:bg-surface-2 disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent"
-                    onClick={() => setMonthStart(new Date(now.getFullYear(), now.getMonth(), 1))}
-                    disabled={monthStart.getFullYear() === now.getFullYear() && monthStart.getMonth() === now.getMonth()}
-                  >
-                    Today
-                  </button>
-                  <button type="button" className={navBtn} onClick={() => goToMonth(1)} aria-label="Next month">
-                    <ChevronRightIcon />
-                  </button>
-                </div>
-              </div>
-              <MonthView key={`${toKey(monthStart)}-${monthReloads}`}monthStart={monthStart} userId={user.id} todayKey={todayKey} restDays={restDays} />
+              <PageHeader
+                eyebrow={String(monthStart.getFullYear())}
+                title={new Intl.DateTimeFormat(undefined, { month: "long" }).format(monthStart)}
+                view={view}
+                onView={showView}
+                unit="month"
+                onPrev={() => goToMonth(-1)}
+                onNext={() => goToMonth(1)}
+                onToday={() => setMonthStart(new Date(now.getFullYear(), now.getMonth(), 1))}
+                atToday={monthStart.getFullYear() === now.getFullYear() && monthStart.getMonth() === now.getMonth()}
+              />
+              <MonthView key={`${toKey(monthStart)}-${monthReloads}`} monthStart={monthStart} userId={user.id} todayKey={todayKey} restDays={restDays} />
             </div>
           ) : (
             <>
-          {/* Week header */}
-          <div className="no-print mb-6 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-                {formatYear(monday)}
-              </p>
-              <h2 className="font-display text-5xl leading-tight tracking-tight sm:text-6xl">
-                {formatRange(monday)}
-              </h2>
-              <p
-                className="mt-1 min-h-5 text-xs text-muted"
-                aria-live="polite"
-              >
-                {status === "saveError" ? (
-                  <>
-                    Not saved yet.{" "}
-                    <button
-                      type="button"
-                      onClick={week.retrySave}
-                      className="cursor-pointer font-semibold text-accent underline underline-offset-2"
-                    >
-                      Retry
-                    </button>
-                  </>
-                ) : (
-                  STATUS_TEXT[status] ?? ""
-                )}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className={navBtn}
-                onClick={() => goToWeek(-1)}
-                aria-label="Previous week"
-              >
-                <ChevronLeftIcon />
-              </button>
-              <button
-                type="button"
-                className="min-h-11 cursor-pointer rounded-full border border-line px-5 text-sm font-medium transition-colors hover:bg-surface-2 disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent"
-                onClick={() => setMonday(mondayOf(now))}
-                disabled={weekKey === thisMonday}
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                className={navBtn}
-                onClick={() => goToWeek(1)}
-                aria-label="Next week"
-              >
-                <ChevronRightIcon />
-              </button>
-            </div>
-          </div>
+          <PageHeader
+            eyebrow={`Week ${isoWeek(monday)} · ${formatYear(monday)}${weekKey === thisMonday ? " · This week" : ""}`}
+            title={formatLongRange(monday)}
+            status={
+              status === "saveError" ? (
+                <>
+                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-danger" />
+                  Not saved yet.{" "}
+                  <button
+                    type="button"
+                    onClick={week.retrySave}
+                    className="cursor-pointer font-semibold text-accent underline underline-offset-2"
+                  >
+                    Retry
+                  </button>
+                </>
+              ) : STATUS_TEXT[status] ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className={`h-1.5 w-1.5 rounded-full ${status === "saved" ? "bg-accent" : "animate-pulse bg-muted"}`}
+                  />
+                  {STATUS_TEXT[status]}
+                </>
+              ) : null
+            }
+            view={view}
+            onView={showView}
+            unit="week"
+            onPrev={() => goToWeek(-1)}
+            onNext={() => goToWeek(1)}
+            onToday={() => setMonday(mondayOf(now))}
+            atToday={weekKey === thisMonday}
+          />
 
           <DayPlan plan={plan} />
 
@@ -382,6 +372,7 @@ const Planner = () => {
                 goalLanes={goalLanes}
                 todayKey={todayKey}
                 restDays={restDays}
+                stats={stats}
                 onOpenGoal={(goal) => setGoalModal({ goal })}
               />
               <GoalsPanel
@@ -398,6 +389,7 @@ const Planner = () => {
           )}
             </>
           )}
+          </div>
         </main>
       </div>
 

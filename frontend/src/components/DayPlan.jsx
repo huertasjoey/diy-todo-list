@@ -129,32 +129,32 @@ const DayList = ({ heading, note, date, tasks, emptyText, showProgress, onAdd, o
 
   const id = `plan-${date}`;
   return (
-    <section aria-labelledby={`${id}-heading`} className="min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <h3 id={`${id}-heading`} className="font-display text-2xl leading-none">
+    <section aria-labelledby={`${id}-heading`} className="flex min-w-0 flex-col p-6 sm:p-7">
+      <p className="eyebrow">{dayFmt.format(parseKey(date))}</p>
+      <div className="mt-2 flex items-baseline justify-between gap-3">
+        <h3 id={`${id}-heading`} className="font-display text-[2rem] leading-none tracking-tight">
           {heading}
         </h3>
-        <span className="text-xs text-muted">{dayFmt.format(parseKey(date))}</span>
+        {showProgress && total > 0 && (
+          <span className="text-xs tabular-nums text-muted" aria-live="polite">
+            {done === total ? "All done" : `${done} of ${total} done`}
+          </span>
+        )}
       </div>
-      <p className="mt-1 text-xs text-muted">{note}</p>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted">{note}</p>
 
       {tasks.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-line px-4 py-5 text-center text-sm text-muted">{emptyText}</p>
+        <p className="mt-5 font-display text-lg italic text-muted">{emptyText}</p>
       ) : (
-        <ul aria-label={`${heading} tasks`} className="mt-3">
+        <ul aria-label={`${heading} tasks`} className="-mx-1 mt-3">
           {tasks.map((t) => (
             <TaskRow key={t.id} task={t} onToggle={onToggle} onEdit={onEdit} onRemove={onRemove} />
           ))}
         </ul>
       )}
 
-      {showProgress && total > 0 && (
-        <p className="mt-2 text-xs text-muted" aria-live="polite">
-          {done === total ? "All done for today." : `${done} of ${total} done`}
-        </p>
-      )}
-
-      <form onSubmit={submit} className="mt-3 flex gap-2" noValidate>
+      <form onSubmit={submit} className="mt-auto flex items-center gap-2 border-b border-line pt-4 transition-colors focus-within:border-accent" noValidate>
+        <PlusIcon width={16} height={16} aria-hidden="true" className="shrink-0 text-muted" />
         <input
           type="text"
           value={text}
@@ -166,14 +166,15 @@ const DayList = ({ heading, note, date, tasks, emptyText, showProgress, onAdd, o
           autoComplete="off"
           aria-label={`Add a task for ${heading.toLowerCase()}`}
           aria-invalid={problem ? "true" : undefined}
-          placeholder="Add a task…"
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-bg px-4 text-[15px] outline-none transition-colors placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15"
+          placeholder="Add a task"
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted/70"
         />
         <button
           type="submit"
-          className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90"
+          disabled={!text.trim()}
+          className="min-h-9 cursor-pointer rounded-full px-3 text-sm font-semibold text-accent transition-colors hover:bg-accent-soft disabled:cursor-default disabled:opacity-0"
         >
-          <PlusIcon width={16} height={16} aria-hidden="true" /> Add
+          Add
         </button>
       </form>
       {problem && (
@@ -192,7 +193,7 @@ const DayList = ({ heading, note, date, tasks, emptyText, showProgress, onAdd, o
 
 /** Today's tasks, and an optional list for tomorrow that turns into today's at midnight. */
 const DayPlan = ({ plan }) => (
-  <section aria-label="Daily plan" className="no-print mb-6">
+  <section aria-label="Daily plan" className="no-print">
     {plan.status === "error" ? (
       <div className="rounded-2xl border border-dashed border-line px-6 py-8 text-center" role="alert">
         <p className="font-display text-2xl">Your daily plan didn&apos;t load</p>
@@ -206,19 +207,15 @@ const DayPlan = ({ plan }) => (
         </button>
       </div>
     ) : plan.status === "loading" ? (
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-[repeat(2,minmax(0,1fr))]" role="status" aria-label="Loading your daily plan">
-        {[0, 1].map((i) => (
-          <div key={i} className="h-44 animate-pulse rounded-2xl bg-surface-2" />
-        ))}
-      </div>
+      <div className="sheet h-56 animate-pulse" role="status" aria-label="Loading your daily plan" />
     ) : (
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-[repeat(2,minmax(0,1fr))]">
+      <div className="sheet grid grid-cols-[minmax(0,1fr)] divide-y divide-line md:grid-cols-[repeat(2,minmax(0,1fr))] md:divide-x md:divide-y-0">
         <DayList
           heading="Today"
           note="What you want to get done today."
           date={plan.todayKey}
           tasks={forDay(plan.tasks, plan.todayKey)}
-          emptyText="Nothing planned for today. Add a task, or plan it the evening before."
+          emptyText="A clear day. Add a task, or plan it the evening before."
           showProgress
           onAdd={plan.add}
           onToggle={plan.toggle}
@@ -227,7 +224,7 @@ const DayPlan = ({ plan }) => (
         />
         <DayList
           heading="Tomorrow"
-          note="Optional. Write down what you'd like to do tomorrow, and it will be waiting for you."
+          note="Optional. Jot down tomorrow's tasks and they'll be waiting for you."
           date={plan.tomorrowKey}
           tasks={forDay(plan.tasks, plan.tomorrowKey)}
           emptyText="Nothing planned yet. You can leave this empty."

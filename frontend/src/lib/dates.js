@@ -45,6 +45,15 @@ export const formatRange = (monday) => {
   return `${a} – ${b}`;
 };
 
+const LONG_MONTH = new Intl.DateTimeFormat(undefined, { month: "long" });
+
+// "November 9 – 15", or "November 30 – December 6" when the week crosses a month
+export const formatLongRange = (monday) => {
+  const sunday = addDays(monday, 6);
+  const end = sunday.getMonth() === monday.getMonth() ? `${sunday.getDate()}` : `${LONG_MONTH.format(sunday)} ${sunday.getDate()}`;
+  return `${LONG_MONTH.format(monday)} ${monday.getDate()} – ${end}`;
+};
+
 // A week can straddle New Year; show both years then.
 export const formatYear = (monday) => {
   const start = monday.getFullYear();

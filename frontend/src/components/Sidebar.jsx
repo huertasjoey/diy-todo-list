@@ -9,7 +9,7 @@ const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2
 const dateFmt = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" });
 
 const toolBtn =
-  "flex min-h-14 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 text-center text-xs font-medium lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-left lg:text-sm text-ink transition-colors hover:bg-surface-2 disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent";
+  "flex min-h-14 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 text-center text-xs font-medium lg:min-h-10 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-left text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent";
 
 /** Live date and time, a month calendar, the week's progress and the tools. */
 const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint, onCsv, onReset }) => {
@@ -48,12 +48,10 @@ const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint,
       </div>
 
       {/* This week */}
-      <div className="mt-6 flex items-center gap-5 rounded-2xl border border-line bg-surface p-5 lg:mt-8">
+      <div className="mt-6 flex items-center gap-5 border-t border-line pt-6 lg:mt-8 lg:pt-8">
         <ProgressRing percent={stats.percent} />
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-            This week
-          </p>
+          <p className="eyebrow">This week</p>
           <p className="mt-1 text-sm">
             {stats.total
               ? `${stats.checked} of ${stats.total} check-ins`
@@ -74,7 +72,7 @@ const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint,
       </div>
 
       {/* Tools */}
-      <div className="mt-4 grid grid-cols-3 gap-1 lg:mt-6 lg:grid-cols-1">
+      <div className="mt-6 grid grid-cols-3 gap-1 border-t border-line pt-4 lg:mt-8 lg:grid-cols-1 lg:pt-6">
         <button type="button" className={toolBtn} onClick={onPrint}>
           <PrinterIcon width={18} height={18} className="text-muted" /> Print planner
         </button>

@@ -84,7 +84,7 @@ const MiniCalendar = ({ monday, todayKey, onPick, goals = [], diaryDays = new Ma
               </span>
               {/* one thin bar per goal running through this day; neighbours join up into a range */}
               {dayGoals.length > 0 && (
-                <span className="pointer-events-none absolute inset-x-0 bottom-0.5 flex flex-col gap-px" aria-hidden="true">
+                <span className="pointer-events-none absolute inset-x-0 bottom-0.5 flex flex-col gap-px opacity-45" aria-hidden="true">
                   {dayGoals.slice(0, 3).map((g) => (
                     <span
                       key={g.id}

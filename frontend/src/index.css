@@ -123,6 +123,39 @@ body {
   box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent), 0 12px 32px -18px color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
+/* Planner panels: a sheet of paper resting on the page, a hairline edge and a soft shadow instead of a border box */
+.sheet {
+  background: var(--surface);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--line) 75%, transparent),
+    0 1px 2px color-mix(in srgb, var(--ink) 4%, transparent),
+    0 18px 40px -28px color-mix(in srgb, var(--ink) 28%, transparent);
+}
+
+/* Small caps label over a section or column */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Notes written on faint ruled lines, like a paper planner */
+.ruled {
+  --rule: 2rem;
+  line-height: var(--rule);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--rule) - 1px),
+    color-mix(in srgb, var(--line) 80%, transparent) calc(var(--rule) - 1px),
+    color-mix(in srgb, var(--line) 80%, transparent) var(--rule)
+  );
+  background-attachment: local;
+}
+
 /* A rest day: soft diagonal stripes instead of boxes to tick */
 .rest-day {
   background-color: color-mix(in srgb, var(--goal) 9%, transparent);
@@ -192,6 +225,10 @@ body {
 
   .main-pane {
     padding: 0 !important;
+  }
+
+  .sheet {
+    box-shadow: none !important;
   }
 
   .habit-card {

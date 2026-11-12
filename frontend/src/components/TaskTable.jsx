@@ -32,6 +32,7 @@ const TaskTable = ({
   diaryDays = new Map(),
   onOpenDiary,
   restDays = { isRest: () => false, toggle: () => {} },
+  stats,
 }) => {
   const restFlags = dates.map((d) => restDays.isRest(toKey(d)));
   // right-click (or long-press) on a box: set that one habit's day as a rest day
@@ -83,44 +84,67 @@ const TaskTable = ({
     }
   };
 
+  // how much of each day is done, across the habits that have something to tick that day
+  const perDay = dates.map((d, i) => {
+    const active = week.filter((t) => t.text.trim() && !restFlags[i] && !restDays.isCellRest?.(toKey(d), t.text.trim()));
+    return active.length ? active.filter((t) => t.days[i]).length / active.length : null;
+  });
+
   return (
-    <>
-      <div className="habit-card overflow-hidden rounded-2xl border border-line bg-surface">
+    <section aria-labelledby="habits-heading" className="mt-14">
+      <div className="no-print mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <h3 id="habits-heading" className="font-display text-[2.5rem] leading-none tracking-tight">
+          Habits
+        </h3>
+        {stats?.total > 0 && (
+          <p className="flex items-center gap-3 text-sm text-muted">
+            <span>
+              {stats.checked} of {stats.total} check-ins
+            </span>
+            <span aria-hidden="true" className="h-1 w-24 overflow-hidden rounded-full bg-line">
+              <span className="block h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${stats.percent}%` }} />
+            </span>
+            <span className="font-display text-xl text-ink tabular-nums">{stats.percent}%</span>
+          </p>
+        )}
+      </div>
+
+      <div className="habit-card sheet overflow-hidden">
         <div className="scroll-x relative overflow-x-auto">
           <table className="planner-table w-full min-w-[640px] border-collapse text-left">
             <caption className="sr-only">
               Weekly habits with one checkbox for each day of the week
             </caption>
             <thead>
-              <tr className="bg-surface-2/60 text-muted">
-                <th
-                  scope="col"
-                  className="sticky left-0 z-10 w-[36%] min-w-44 bg-surface-2 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em]"
-                >
-                  Habits
+              <tr className="border-b border-line text-muted">
+                <th scope="col" className="eyebrow sticky left-0 z-10 w-[36%] min-w-44 bg-surface px-6 pb-4 pt-6 align-bottom">
+                  Habit
                 </th>
                 {DAY_SHORT.map((short, i) => (
                   <th
                     key={short}
                     scope="col"
                     aria-label={`${DAY_NAMES[i]} ${dates[i].getDate()}${i === todayIndex ? ", today" : ""}`}
-                    className={`w-14 min-w-14 px-0 py-2.5 text-center ${
-                      i === todayIndex ? "bg-accent-soft text-ink" : ""
+                    className={`group w-14 min-w-14 px-0 pb-3 pt-5 text-center align-bottom ${
+                      i === todayIndex ? "bg-accent-soft/50 text-ink" : ""
                     } ${restFlags[i] ? "rest-day" : ""}`}
                   >
-                    <span
-                      aria-hidden="true"
-                      className="block text-[11px] font-semibold uppercase tracking-[0.12em]"
-                    >
+                    <span aria-hidden="true" className="block text-[10px] font-semibold uppercase tracking-[0.18em]">
                       {short}
                     </span>
                     <span
                       aria-hidden="true"
-                      className={`mx-auto mt-1 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-medium ${
+                      className={`mx-auto mt-1.5 flex h-9 w-9 items-center justify-center rounded-full font-display text-[1.35rem] leading-none ${
                         i === todayIndex ? "bg-accent text-accent-ink" : "text-ink"
                       }`}
                     >
                       {dates[i].getDate()}
+                    </span>
+                    {/* that day's share of check-ins done */}
+                    <span aria-hidden="true" className="no-print mx-auto mt-2 block h-[3px] w-6 overflow-hidden rounded-full bg-line">
+                      {perDay[i] !== null && (
+                        <span className="block h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${perDay[i] * 100}%` }} />
+                      )}
                     </span>
                     <button
                       type="button"
@@ -128,20 +152,17 @@ const TaskTable = ({
                       aria-pressed={restFlags[i]}
                       aria-label={`${restFlags[i] ? "Unmark" : "Mark"} ${DAY_NAMES[i]} as a rest day`}
                       title={restFlags[i] ? "Rest day (click to undo)" : "Mark as a rest day"}
-                      className={`no-print mx-auto mt-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-colors ${
-                        restFlags[i] ? "bg-surface text-ink shadow-sm" : "text-muted/60 hover:bg-surface hover:text-ink"
+                      className={`no-print mx-auto mt-1.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-all ${
+                        restFlags[i]
+                          ? "bg-surface text-goal shadow-sm"
+                          : "text-muted/70 hover:bg-surface hover:text-ink focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                       }`}
                     >
                       <MoonIcon width={13} height={13} />
                     </button>
-                    {restFlags[i] && (
-                      <span aria-hidden="true" className="mt-0.5 block text-[9px] font-bold uppercase tracking-wider text-goal">
-                        Rest
-                      </span>
-                    )}
                   </th>
                 ))}
-                <th scope="col" className="w-16 px-2 text-center text-[11px] font-semibold uppercase tracking-[0.16em]">
+                <th scope="col" className="eyebrow w-20 px-2 pb-4 text-center align-bottom">
                   Week
                 </th>
                 <th scope="col" className="no-print w-24">
@@ -150,12 +171,12 @@ const TaskTable = ({
               </tr>
             </thead>
             {goalLanes.length > 0 && (
-              <tbody className="no-print border-t border-line">
+              <tbody className="no-print border-b border-line">
                 {shownLanes.map((lane, laneIndex) => (
                   <tr key={laneIndex}>
                     <th
                       scope="row"
-                      className="sticky left-0 z-[1] bg-surface px-5 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-goal"
+                      className={`sticky left-0 z-[1] bg-surface px-6 pb-1 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-goal ${laneIndex === 0 ? "pt-3" : "pt-1"}`}
                     >
                       {laneIndex === 0 ? "Goals" : <span className="sr-only">Goals, row {laneIndex + 1}</span>}
                     </th>
@@ -165,7 +186,7 @@ const TaskTable = ({
                         const g = seg.goal;
                         const st = goalStatus(g, todayKey);
                         return (
-                          <td key={day} colSpan={seg.end - seg.start + 1} className="px-0.5 py-1.5">
+                          <td key={day} colSpan={seg.end - seg.start + 1} className={`px-1 pb-1 ${laneIndex === 0 ? "pt-3" : "pt-1"}`}>
                             <button
                               type="button"
                               onClick={() => onOpenGoal(g)}
@@ -173,10 +194,11 @@ const TaskTable = ({
 ${formatRangeText(g)}
 ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%)`}`}
                               aria-label={`Goal: ${g.title}, ${formatRangeText(g)}, ${percentLabel(g)}, ${STATUS[st].label}. Open details`}
-                              className={`flex h-8 w-full cursor-pointer items-center gap-2 overflow-hidden border-l-[3px] px-2.5 text-left text-xs font-medium text-ink transition-opacity hover:opacity-80 ${STATUS[st].bar} ${
-                                seg.clippedLeft ? "rounded-l-none" : "rounded-l-md"
-                              } ${seg.clippedRight ? "rounded-r-none" : "rounded-r-md"}`}
+                              className={`flex h-7 w-full cursor-pointer items-center gap-2 overflow-hidden px-3 text-left text-xs font-medium text-ink transition-opacity hover:opacity-80 ${STATUS[st].bar.split(" ")[1]} ${
+                                seg.clippedLeft ? "rounded-l-none" : "rounded-l-full"
+                              } ${seg.clippedRight ? "rounded-r-none" : "rounded-r-full"}`}
                             >
+                              <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS[st].fill}`} />
                               <span className="truncate">{g.title}</span>
                               {progressPercent(g) !== null && (
                                 <span className={`ml-auto shrink-0 tabular-nums ${STATUS[st].text}`}>
@@ -195,7 +217,7 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                 ))}
                 {hiddenGoals > 0 && (
                   <tr>
-                    <td colSpan={10} className="px-5 pb-2 pt-0.5 text-xs text-muted">
+                    <td colSpan={10} className="px-6 pb-3 pt-0.5 text-xs text-muted">
                       <a href="#goals" className="font-medium text-goal underline underline-offset-2">
                         +{hiddenGoals} more {hiddenGoals === 1 ? "goal" : "goals"} this week
                       </a>
@@ -205,26 +227,26 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
               </tbody>
             )}
             {dates.some((d) => diaryDays.has(toKey(d))) && (
-              <tbody className="no-print border-t border-line">
+              <tbody className="no-print border-b border-line">
                 <tr>
                   <th
                     scope="row"
-                    className="sticky left-0 z-[1] bg-surface px-5 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-diary"
+                    className="sticky left-0 z-[1] bg-surface px-6 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-diary"
                   >
                     Diary
                   </th>
                   {dates.map((d, i) => {
                     const entry = diaryDays.get(toKey(d));
                     return (
-                      <td key={toKey(d)} className="px-0.5 py-1.5 text-center">
+                      <td key={toKey(d)} className="px-1 py-2.5 text-center">
                         {entry && (
                           <button
                             type="button"
                             onClick={() => onOpenDiary(toKey(d))}
                             title={`${DAY_NAMES[i]}: diary ${entry.draft ? "draft" : "entry"}, ${entry.words} words`}
                             aria-label={`Diary ${entry.draft ? "draft" : "entry"} for ${DAY_NAMES[i]} ${d.getDate()}, ${entry.words} words. Open it`}
-                            className={`flex h-8 w-full cursor-pointer items-center justify-center gap-1 overflow-hidden rounded-md border-l-[3px] border-diary bg-diary-soft px-1 text-xs font-medium text-diary transition-opacity hover:opacity-80 ${
-                              entry.draft ? "border-dashed" : ""
+                            className={`mx-auto flex h-7 w-full max-w-16 cursor-pointer items-center justify-center gap-1 overflow-hidden rounded-full px-1.5 text-[11px] font-medium text-diary transition-opacity hover:opacity-80 ${
+                              entry.draft ? "border border-dashed border-diary/60" : "bg-diary-soft"
                             }`}
                           >
                             <BookIcon width={13} height={13} aria-hidden="true" className="shrink-0" />
@@ -250,7 +272,7 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                 return (
                   <tr
                     key={task.id}
-                    className={`task-row group border-t border-line transition-colors hover:bg-surface-2/50 ${
+                    className={`task-row group border-t border-line/60 transition-colors first:border-t-0 hover:bg-surface-2/40 ${
                       index >= visible ? "hidden print:table-row" : ""
                     }`}
                   >
@@ -279,7 +301,7 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                         }}
                         aria-invalid={duplicateOf.has(task.id) || undefined}
                         aria-describedby={duplicateOf.has(task.id) ? `dup-${task.id}` : undefined}
-                        className={`h-14 w-full min-w-44 bg-transparent px-5 text-[15px] outline-none transition-colors placeholder:text-muted/70 focus:bg-accent-soft/60 focus-visible:outline-none print:placeholder:text-transparent ${
+                        className={`h-14 w-full min-w-44 bg-transparent px-6 text-[15px] outline-none transition-colors placeholder:text-muted/70 focus:bg-accent-soft/60 focus-visible:outline-none print:placeholder:text-transparent ${
                           finished ? "text-muted line-through decoration-muted/50" : "text-ink"
                         } ${duplicateOf.has(task.id) ? "pr-32 shadow-[inset_3px_0_0_var(--color-danger)]" : ""}`}
                       />
@@ -296,7 +318,7 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                     {task.days.map((checked, day) => (
                       <td
                         key={day}
-                        className={`p-0 text-center ${day === todayIndex ? "bg-accent-soft/50" : ""} ${off[day] ? "rest-day" : ""}`}
+                        className={`p-0 text-center ${day === todayIndex ? "bg-accent-soft/35" : ""} ${off[day] ? "rest-day" : ""}`}
                       >
                         <DayBox
                           checked={checked && !off[day]}
@@ -313,12 +335,19 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                       </td>
                     ))}
                     <td className="p-0 text-center text-xs tabular-nums">
-                      <span
-                        className={finished ? "font-semibold text-accent" : "text-muted"}
-                        aria-label={`${done} of ${activeDays} days`}
-                      >
-                        {task.text.trim() || done ? `${done}/${activeDays}` : ""}
-                      </span>
+                      {(task.text.trim() || done > 0) && (
+                        <span className="inline-flex flex-col items-center gap-1" aria-label={`${done} of ${activeDays} days`}>
+                          <span className={finished ? "font-semibold text-accent" : "text-muted"}>
+                            {done}/{activeDays}
+                          </span>
+                          <span aria-hidden="true" className="no-print block h-[3px] w-8 overflow-hidden rounded-full bg-line">
+                            <span
+                              className="block h-full rounded-full bg-accent transition-[width] duration-500"
+                              style={{ width: `${activeDays ? (done / activeDays) * 100 : 0}%` }}
+                            />
+                          </span>
+                        </span>
+                      )}
                     </td>
                     <td className="no-print p-0">
                       <div className="flex items-center justify-center opacity-100 transition-opacity md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
@@ -367,11 +396,11 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
         type="button"
         disabled={!ready}
         onClick={addHabit}
-        className="no-print mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-50"
+        className="no-print mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-50"
       >
         <PlusIcon width={16} height={16} /> Add habit
       </button>
-    </>
+    </section>
   );
 };
 

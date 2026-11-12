@@ -3,7 +3,7 @@ import GoalProgress from "./GoalProgress";
 import { CalendarIcon, PlusIcon } from "./Icons";
 
 const addBtn =
-  "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-accent-ink transition-opacity hover:opacity-90";
+  "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-medium text-ink shadow-[0_0_0_1px_var(--line)] transition-colors hover:bg-surface-2";
 
 const GoalsPanel = ({ goals, status, error, todayKey, onAdd, onOpen, onRetry }) => {
   const sorted = sortGoals(goals, todayKey);
@@ -16,15 +16,15 @@ const GoalsPanel = ({ goals, status, error, todayKey, onAdd, onOpen, onRetry }) 
     <section
       id="goals"
       aria-labelledby="goals-heading"
-      className="no-print mt-6 scroll-mt-24 rounded-2xl border border-line bg-surface p-5 sm:p-6"
+      className="no-print mt-14 scroll-mt-24"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 id="goals-heading" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2 id="goals-heading" className="font-display text-[2.5rem] leading-none tracking-tight">
             Goals
           </h2>
           {status === "ready" && sorted.length > 0 && (
-            <p className="mt-1 text-sm text-muted">
+            <p className="text-sm text-muted">
               {counts.active} active
               {counts.overdue > 0 && <> · <span className="text-danger">{counts.overdue} overdue</span></>}
               {counts.completed > 0 && <> · {counts.completed} completed</>}
@@ -75,7 +75,7 @@ const GoalsPanel = ({ goals, status, error, todayKey, onAdd, onOpen, onRetry }) 
       )}
 
       {status === "ready" && sorted.length > 0 && (
-        <ul className="mt-5 grid gap-3 xl:grid-cols-2">
+        <ul className="mt-5 grid gap-4 md:grid-cols-2">
           {sorted.map((g) => {
             const s = goalStatus(g, todayKey);
             return (
@@ -84,10 +84,10 @@ const GoalsPanel = ({ goals, status, error, todayKey, onAdd, onOpen, onRetry }) 
                   type="button"
                   onClick={() => onOpen(g)}
                   aria-label={`${g.title}, ${STATUS[s].label}, ${percentLabel(g)}. Open details`}
-                  className={`block w-full cursor-pointer rounded-xl border border-line border-l-4 bg-bg p-4 text-left transition-colors hover:bg-surface-2 ${STATUS[s].bar.split(" ")[0]}`}
+                  className="sheet block h-full w-full cursor-pointer p-6 text-left transition-transform duration-200 hover:-translate-y-0.5"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="min-w-0 break-words text-[15px] font-semibold">{g.title}</span>
+                    <span className="min-w-0 break-words font-display text-2xl leading-tight">{g.title}</span>
                     <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS[s].badge}`}>
                       {STATUS[s].label}
                     </span>
@@ -95,13 +95,13 @@ const GoalsPanel = ({ goals, status, error, todayKey, onAdd, onOpen, onRetry }) 
                   <p className="mt-1 text-xs text-muted">
                     {formatRangeText(g)} · {timeLeftText(g, todayKey)}
                   </p>
-                  <GoalProgress goal={g} status={s} className="mt-3" />
+                  <GoalProgress goal={g} status={s} className="mt-5" />
                   <div className={`${progressPercent(g) === null ? "mt-3" : "mt-2"} flex items-baseline justify-between text-sm`}>
                     <span className={progressPercent(g) === null && g.current <= 0 ? "text-muted" : ""}>
                       {progressText(g)}
                     </span>
                     {progressPercent(g) !== null && (
-                      <span className="font-semibold tabular-nums">{progressPercent(g)}%</span>
+                      <span className="font-display text-xl tabular-nums">{progressPercent(g)}%</span>
                     )}
                   </div>
                 </button>

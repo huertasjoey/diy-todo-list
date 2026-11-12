@@ -11,7 +11,7 @@ const GoalProgress = ({ goal, status, className = "" }) => {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={pct}
-      className={`h-2 overflow-hidden rounded-full bg-line ${className}`}
+      className={`h-1.5 overflow-hidden rounded-full bg-line ${className}`}
     >
       <div
         className={`h-full rounded-full transition-[width] duration-300 ${STATUS[status].fill}`}

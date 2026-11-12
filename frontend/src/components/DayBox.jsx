@@ -22,16 +22,16 @@ const DayBox = ({ checked, onChange, label, disabled, onMenu, off = false }) => 
       <span
         aria-hidden="true"
         title="Rest day"
-        className="flex h-7 w-7 items-center justify-center rounded-full border border-goal/50 bg-goal-soft text-goal"
+        className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-goal-soft text-goal"
       >
         <MoonIcon width={14} height={14} />
       </span>
     ) : (
     <span
       aria-hidden="true"
-      className="flex h-7 w-7 items-center justify-center rounded-full border border-muted/60 text-accent-ink transition-all duration-150 hover:border-accent peer-checked:scale-100 peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
+      className="flex h-[26px] w-[26px] items-center justify-center rounded-full border-[1.5px] border-muted/35 text-accent-ink transition-all duration-200 hover:border-accent hover:bg-accent-soft/60 peer-checked:border-accent peer-checked:bg-accent peer-checked:shadow-[0_2px_8px_-2px_color-mix(in_srgb,var(--accent)_60%,transparent)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
     >
-      {checked && <CheckIcon width={15} height={15} strokeWidth={3} />}
+      {checked && <CheckIcon width={14} height={14} strokeWidth={3} />}
     </span>
     )}
   </label>
