@@ -12,11 +12,11 @@ const Notes = ({ value, onChange, disabled }) => {
   }, [value]);
 
   return (
-    <section className="notes-card mt-14">
-      <h2 id="notes-heading" className="font-display text-[2.5rem] leading-none tracking-tight">
+    <section className="notes-card mt-10">
+      <h2 id="notes-heading" className="text-lg font-semibold leading-none tracking-tight">
         Notes
       </h2>
-      <div className="no-print sheet mt-5 px-6 pb-6 pt-4 sm:px-8">
+      <div className="no-print sheet mt-3 p-5">
         <textarea
           ref={ref}
           value={value}
@@ -25,7 +25,7 @@ const Notes = ({ value, onChange, disabled }) => {
           onChange={(e) => onChange(e.target.value)}
           aria-labelledby="notes-heading"
           placeholder="Reminders, ideas, appointments, intentions for the week"
-          className="ruled block min-h-48 w-full resize-none bg-transparent text-[15px] text-ink outline-none placeholder:text-muted/70"
+          className="block min-h-40 w-full resize-none bg-transparent text-sm leading-relaxed text-ink outline-none placeholder:text-muted/70"
         />
       </div>
       {/* Print shows this copy instead: it wraps at the page width, so nothing gets clipped */}

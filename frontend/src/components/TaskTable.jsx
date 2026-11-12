@@ -91,9 +91,9 @@ const TaskTable = ({
   });
 
   return (
-    <section aria-labelledby="habits-heading" className="mt-14">
-      <div className="no-print mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <h3 id="habits-heading" className="font-display text-[2.5rem] leading-none tracking-tight">
+    <section aria-labelledby="habits-heading" className="mt-10">
+      <div className="no-print mb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <h3 id="habits-heading" className="text-lg font-semibold leading-none tracking-tight">
           Habits
         </h3>
         {stats?.total > 0 && (
@@ -104,7 +104,7 @@ const TaskTable = ({
             <span aria-hidden="true" className="h-1 w-24 overflow-hidden rounded-full bg-line">
               <span className="block h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${stats.percent}%` }} />
             </span>
-            <span className="font-display text-xl text-ink tabular-nums">{stats.percent}%</span>
+            <span className="font-semibold text-ink tabular-nums">{stats.percent}%</span>
           </p>
         )}
       </div>
@@ -117,7 +117,7 @@ const TaskTable = ({
             </caption>
             <thead>
               <tr className="border-b border-line text-muted">
-                <th scope="col" className="eyebrow sticky left-0 z-10 w-[36%] min-w-44 bg-surface px-6 pb-4 pt-6 align-bottom">
+                <th scope="col" className="eyebrow sticky left-0 z-10 w-[36%] min-w-44 bg-surface px-5 pb-3 pt-4 align-bottom">
                   Habit
                 </th>
                 {DAY_SHORT.map((short, i) => (
@@ -125,16 +125,16 @@ const TaskTable = ({
                     key={short}
                     scope="col"
                     aria-label={`${DAY_NAMES[i]} ${dates[i].getDate()}${i === todayIndex ? ", today" : ""}`}
-                    className={`group w-14 min-w-14 px-0 pb-3 pt-5 text-center align-bottom ${
+                    className={`group w-14 min-w-14 px-0 pb-2.5 pt-3.5 text-center align-bottom ${
                       i === todayIndex ? "bg-accent-soft/50 text-ink" : ""
                     } ${restFlags[i] ? "rest-day" : ""}`}
                   >
-                    <span aria-hidden="true" className="block text-[10px] font-semibold uppercase tracking-[0.18em]">
+                    <span aria-hidden="true" className="block text-[10px] font-semibold uppercase tracking-[0.06em]">
                       {short}
                     </span>
                     <span
                       aria-hidden="true"
-                      className={`mx-auto mt-1.5 flex h-9 w-9 items-center justify-center rounded-full font-display text-[1.35rem] leading-none ${
+                      className={`mx-auto mt-1 flex h-7 w-7 items-center justify-center rounded-md text-sm font-semibold tabular-nums leading-none ${
                         i === todayIndex ? "bg-accent text-accent-ink" : "text-ink"
                       }`}
                     >
@@ -162,7 +162,7 @@ const TaskTable = ({
                     </button>
                   </th>
                 ))}
-                <th scope="col" className="eyebrow w-20 px-2 pb-4 text-center align-bottom">
+                <th scope="col" className="eyebrow w-20 px-2 pb-3 text-center align-bottom">
                   Week
                 </th>
                 <th scope="col" className="no-print w-24">

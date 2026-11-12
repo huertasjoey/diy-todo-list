@@ -21,13 +21,13 @@ const MiniCalendar = ({ monday, todayKey, onPick, goals = [], diaryDays = new Ma
   return (
     <section aria-label="Calendar">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-2xl leading-none">{monthFmt.format(view)}</h2>
+        <h2 className="text-sm font-semibold leading-none">{monthFmt.format(view)}</h2>
         <div className="flex">
           <button
             type="button"
             onClick={() => shiftMonth(-1)}
             aria-label="Previous month"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <ChevronLeftIcon width={18} height={18} />
           </button>
@@ -35,7 +35,7 @@ const MiniCalendar = ({ monday, todayKey, onPick, goals = [], diaryDays = new Ma
             type="button"
             onClick={() => shiftMonth(1)}
             aria-label="Next month"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <ChevronRightIcon width={18} height={18} />
           </button>

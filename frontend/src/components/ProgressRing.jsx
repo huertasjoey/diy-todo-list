@@ -26,7 +26,7 @@ const ProgressRing = ({ percent, size = 88, stroke = 7 }) => {
           style={{ transition: "stroke-dashoffset 0.4s ease" }}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-display text-2xl tabular-nums">
+      <span className="absolute inset-0 flex items-center justify-center text-xl font-semibold tracking-tight tabular-nums">
         {percent}
         <span className="text-sm text-muted">%</span>
       </span>

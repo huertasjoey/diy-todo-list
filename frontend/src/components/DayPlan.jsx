@@ -129,10 +129,10 @@ const DayList = ({ heading, note, date, tasks, emptyText, showProgress, onAdd, o
 
   const id = `plan-${date}`;
   return (
-    <section aria-labelledby={`${id}-heading`} className="flex min-w-0 flex-col p-6 sm:p-7">
+    <section aria-labelledby={`${id}-heading`} className="flex min-w-0 flex-col p-5 sm:p-6">
       <p className="eyebrow">{dayFmt.format(parseKey(date))}</p>
-      <div className="mt-2 flex items-baseline justify-between gap-3">
-        <h3 id={`${id}-heading`} className="font-display text-[2rem] leading-none tracking-tight">
+      <div className="mt-1 flex items-baseline justify-between gap-3">
+        <h3 id={`${id}-heading`} className="text-base font-semibold leading-tight">
           {heading}
         </h3>
         {showProgress && total > 0 && (
@@ -144,7 +144,7 @@ const DayList = ({ heading, note, date, tasks, emptyText, showProgress, onAdd, o
       <p className="mt-1.5 text-xs leading-relaxed text-muted">{note}</p>
 
       {tasks.length === 0 ? (
-        <p className="mt-5 font-display text-lg italic text-muted">{emptyText}</p>
+        <p className="mt-4 text-sm text-muted">{emptyText}</p>
       ) : (
         <ul aria-label={`${heading} tasks`} className="-mx-1 mt-3">
           {tasks.map((t) => (
@@ -196,7 +196,7 @@ const DayPlan = ({ plan }) => (
   <section aria-label="Daily plan" className="no-print">
     {plan.status === "error" ? (
       <div className="rounded-2xl border border-dashed border-line px-6 py-8 text-center" role="alert">
-        <p className="font-display text-2xl">Your daily plan didn&apos;t load</p>
+        <p className="text-base font-semibold">Your daily plan didn&apos;t load</p>
         <p className="mt-1 text-sm text-muted">{plan.error || "Check your connection and try again."}</p>
         <button
           type="button"

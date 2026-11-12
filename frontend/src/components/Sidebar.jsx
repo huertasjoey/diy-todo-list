@@ -9,7 +9,7 @@ const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2
 const dateFmt = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" });
 
 const toolBtn =
-  "flex min-h-14 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-2 text-center text-xs font-medium lg:min-h-10 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-left text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent";
+  "flex min-h-14 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg px-2 text-center text-xs font-medium lg:min-h-10 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-left text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent";
 
 /** Live date and time, a month calendar, the week's progress and the tools. */
 const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint, onCsv, onReset }) => {
@@ -23,12 +23,12 @@ const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint,
         <div>
           <time
             dateTime={now.toISOString()}
-            className="block font-display text-5xl leading-none tracking-tight tabular-nums lg:text-6xl"
+            className="block text-4xl font-semibold leading-none tracking-tight tabular-nums lg:text-[2.75rem]"
           >
             {timeFmt.format(now)}
           </time>
           <p className="mt-2 text-sm text-muted">{dateFmt.format(now)}</p>
-          <p className="mt-0.5 text-xs uppercase tracking-[0.16em] text-muted">
+          <p className="eyebrow mt-1">
             Week {isoWeek(now)}
           </p>
         </div>
@@ -36,7 +36,7 @@ const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint,
           type="button"
           onClick={() => setShowCalendar((s) => !s)}
           aria-expanded={showCalendar}
-          className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-4 text-sm font-medium transition-colors hover:bg-surface-2 lg:hidden"
+          className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-line px-3.5 text-sm font-medium transition-colors hover:bg-surface-2 lg:hidden"
         >
           <CalendarIcon width={16} height={16} /> Calendar
         </button>
@@ -58,7 +58,7 @@ const Sidebar = ({ now, monday, stats, ready, goals, diaryDays, onPick, onPrint,
               : "Add a habit to start tracking"}
           </p>
           {stats.total > 0 && (
-            <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold">
+            <p className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-surface-2 px-2 py-0.5 text-xs font-semibold">
               <span aria-hidden="true" className={`h-2 w-2 rounded-full ${levelFor(stats.percent).dot}`} />
               {levelFor(stats.percent).label}
             </p>

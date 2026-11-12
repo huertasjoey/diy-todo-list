@@ -35,30 +35,30 @@ import {
 import { weekLanes } from "./lib/goals";
 
 const navBtn =
-  "flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-ink transition-colors hover:bg-surface-2";
+  "flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-ink transition-colors hover:bg-surface-2";
 
-/** The big serif title for the week or month, with the Week | Month switch and previous / today / next. */
+/** The page title for the week or month, with the Week | Month switch and previous / today / next. */
 const PageHeader = ({ eyebrow, title, status, view, onView, unit, onPrev, onNext, onToday, atToday }) => (
-  <header className="no-print mb-10 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
+  <header className="no-print mb-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
     <div className="min-w-0">
       <p className="eyebrow">{eyebrow}</p>
-      <h2 className="mt-3 font-display text-5xl leading-[1.02] tracking-tight sm:text-[4.5rem]">{title}</h2>
+      <h2 className="mt-1.5 text-3xl font-semibold leading-tight tracking-tight sm:text-[2.25rem]">{title}</h2>
       {status !== undefined && (
-        <p className="mt-3 flex min-h-5 items-center gap-2 text-xs text-muted" aria-live="polite">
+        <p className="mt-2 flex min-h-5 items-center gap-2 text-xs text-muted" aria-live="polite">
           {status}
         </p>
       )}
     </div>
 
-    <div className="flex flex-col items-start gap-3 sm:items-end">
-      <div role="group" aria-label="Planner view" className="inline-flex rounded-full bg-surface-2 p-1">
+    <div className="flex flex-wrap items-center gap-3">
+      <div role="group" aria-label="Planner view" className="inline-flex rounded-lg bg-surface-2 p-1">
         {["week", "month"].map((v) => (
           <button
             key={v}
             type="button"
             aria-pressed={view === v}
             onClick={() => onView(v)}
-            className={`min-h-9 min-w-20 cursor-pointer rounded-full px-4 text-sm font-medium capitalize transition-colors ${
+            className={`min-h-8 min-w-18 cursor-pointer rounded-md px-3 text-sm font-medium capitalize transition-colors ${
               view === v ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
@@ -66,13 +66,13 @@ const PageHeader = ({ eyebrow, title, status, view, onView, unit, onPrev, onNext
           </button>
         ))}
       </div>
-      <div className="inline-flex items-center rounded-full p-0.5 shadow-[0_0_0_1px_var(--line)]">
+      <div className="inline-flex items-center rounded-lg bg-surface p-0.5 shadow-[0_0_0_1px_var(--line)]">
         <button type="button" className={navBtn} onClick={onPrev} aria-label={`Previous ${unit}`}>
           <ChevronLeftIcon width={18} height={18} />
         </button>
         <button
           type="button"
-          className="min-h-11 cursor-pointer rounded-full px-4 text-sm font-medium transition-colors hover:bg-surface-2 disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent"
+          className="min-h-9 cursor-pointer rounded-md px-3 text-sm font-medium transition-colors hover:bg-surface-2 disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent"
           onClick={onToday}
           disabled={atToday}
         >
@@ -342,7 +342,7 @@ const Planner = () => {
 
           {status === "loadError" ? (
             <div className="rounded-2xl border border-dashed border-line px-6 py-16 text-center" role="alert">
-              <p className="font-display text-3xl">This week didn’t load</p>
+              <p className="text-lg font-semibold">This week didn’t load</p>
               <p className="mt-2 text-sm text-muted">
                 Your saved habits are safe. Check your connection, then try again.
               </p>
