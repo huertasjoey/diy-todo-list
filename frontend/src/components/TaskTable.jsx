@@ -273,8 +273,8 @@ ${progressText(g)}${progressPercent(g) === null ? '' : ` (${progressPercent(g)}%
                   <tr
                     key={task.id}
                     className={`task-row group border-t border-line/60 transition-colors first:border-t-0 hover:bg-surface-2/40 ${
-                      index >= visible ? "hidden print:table-row" : ""
-                    }`}
+                      index >= visible ? "hidden" : ""
+                    } ${habit === "" && !task.days.some(Boolean) ? "print:hidden" : ""}`}
                   >
                     <th
                       scope="row"
